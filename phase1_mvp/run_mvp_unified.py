@@ -62,18 +62,23 @@ def _make_agent(kind: str, *, model_name: str, library: PriorLibrary,
     raise ValueError(f"unknown agent kind: {kind}")
 
 
-def config_tag(scientist_priors: bool, novice_priors: bool, echo_anchor: bool) -> str:
-    # Canonical three tags used in Step 3.5
+def config_tag(scientist_priors: bool, novice_priors: bool, echo_anchor: bool,
+               prior_k: int = 5) -> str:
+    # Canonical four tags used in Step 3.5 (implicit k=5)
     if not scientist_priors and not novice_priors and echo_anchor:
-        return "baseline_echo"
-    if not scientist_priors and not novice_priors and not echo_anchor:
-        return "baseline_noecho"
-    if scientist_priors and not novice_priors and not echo_anchor:
-        return "meis_sci_noecho"
-    if scientist_priors and novice_priors and not echo_anchor:
-        return "meis_full_noecho"
-    # Fallback label
-    return f"sci{int(scientist_priors)}_nov{int(novice_priors)}_echo{int(echo_anchor)}"
+        base = "baseline_echo"
+    elif not scientist_priors and not novice_priors and not echo_anchor:
+        base = "baseline_noecho"
+    elif scientist_priors and not novice_priors and not echo_anchor:
+        base = "meis_sci_noecho"
+    elif scientist_priors and novice_priors and not echo_anchor:
+        base = "meis_full_noecho"
+    else:
+        base = f"sci{int(scientist_priors)}_nov{int(novice_priors)}_echo{int(echo_anchor)}"
+    # Only suffix prior_k when it differs from the default used in Step 3.5.
+    if prior_k != 5 and (scientist_priors or novice_priors):
+        base = f"{base}_k{prior_k}"
+    return base
 
 
 def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
@@ -151,7 +156,7 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
 
     err_mean, err_std = goal.evaluate_predictions(predictions, gts)
 
-    tag = config_tag(scientist_priors, novice_priors, echo_anchor)
+    tag = config_tag(scientist_priors, novice_priors, echo_anchor, prior_k=prior_k)
     out_dir = RUNS_ROOT / env_name / tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
