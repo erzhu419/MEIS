@@ -220,48 +220,75 @@ MSA (Wong 的 Model Synthesis Architecture) 只公开了**数据和 prompts**，
 
 ---
 
-## 4. Phase 1 第一周的具体施工动作
+## 4. 渐进改造原则 + 七步 Step-Gated 路线
 
-### 第 1-2 天：走通 BoxingGym baseline
-```bash
-export ANTHROPIC_API_KEY=sk-...
-cd /home/erzhu419/mine_code/MEIS/boxing-gym
-python run_experiment.py envs=dugongs llms=anthropic seed=0
-```
-预期：跑通 10 轮实验，拿到 EI Regret 和 prediction error 数字作为对照基线。
+> 比喻：**人腿在人身上能工作，马头在马身上能工作，不代表马头和人腿拼起来依然工作。**
+> 所以选一个**完整的现成基座**（boxing-gym），一步步按本 blueprint 改造；其他 repo（AutoToM 等）的模块**只在 MEIS 自己的需求位置浮现后才条件借用**，不是一开始就拼装。
 
-### 第 3-4 天：新建 MEIS Phase 1 骨架
-```
-MEIS/
-├── phase1_mvp/                         # 新建，放入 git
-│   ├── __init__.py
-│   ├── envs/
-│   │   └── alice_charlie.py            # 模仿 envs/dugongs.py 写 Alice-Charlie 体重-脚印 env
-│   ├── agents/
-│   │   └── prior_injecting_agent.py    # 继承 boxing-gym LMExperimenter + 注入先验库
-│   ├── variable_schema.py              # 抄 AutoToM/model/ElementExtractor.py:7-24 的 Variable dataclass
-│   └── run_phase1.py                   # 仿 run_experiment.py
-```
+### 4.1 基座确认：boxing-gym
 
-### 第 5 天：跨域先验库 v0
-```
-phase2_prior_library/                   # 新建
-├── human_body.json                     # 10 条：身高~N(170,10), density~N(1010,30), weight=density×k×h³ ...
-├── retrieval.py                        # 简单关键词匹配，后面升级 embedding
-```
+它已经一次性提供 MEIS 三层的 2/3：
 
-### 第 6-7 天：对照评测
-- 在 Alice-Charlie env 上跑三组：
-  1. 原版 BoxingGym LMExperimenter（无先验）
-  2. BoxingGym + LLM 即时生成先验（no-library baseline）
-  3. MEIS prior-injecting agent（curated 先验库 + LLM 补长尾）
-- 比 prediction error + EI Regret + 后验熵下降速度
+- **L1 表示层** — 每个 env 自带 PyMC 生成模型（真贝叶斯，非 LLM 模拟）
+- **L2 度量层** — EIG 实现开箱可用
+- **L4 调度层** — LLM client (`LMExperimenter`) + Box's Loop 循环
 
-这 7 天的 deliverable = **MEIS 的第一个可被 BoxingGym 基座评测的改装 MVP**。
+MEIS 真正的原创（L3 跨域先验库 + 最小扰动评分 + Fisher info + 定律动物园）**在所有候选 repo 里都没有**，必须在 boxing-gym 躯干上长出来。
+
+### 4.2 四条改造原则
+
+1. **每一步只改一个东西** — 加新 env、加新 agent 子类、加新评分模块……绝不同时改两处
+2. **每一步都必须通过验证才 merge** — 验证 = 新功能 smoke test + 原基座功能未被弄坏
+3. **第三方代码延迟借用** — AutoToM 的 `Variable` dataclass、`model_adjustment` 贪心搜索骨架等，**等 MEIS 自己的需求位置浮现出来才借**，不是一开始就搬。写着写着很可能发现自己的 schema 更简单，外部那套根本不需要
+4. **每一步都显式过 MEIS 方向审计** — 这一步在 L1/L2/L3/L4 哪一层？是让 MEIS 更像 MEIS，还是在向 boxing-gym 靠拢？
+
+### 4.3 七步施工路线（每步可验证、可回滚）
+
+| Step | 动作 | 动了什么 | 验证 | MEIS 方向 | 借外部代码？ |
+|---|---|---|---|---|---|
+| **0** | 把 boxing-gym baseline 跑通一次（dugongs + claude / 或 `run_eig_regret.py` 不用 API key） | 只读、不改 | 记录 EI Regret、prediction error 作为对照基准 | —（先确认躯干活着）| 无 |
+| **1** | 在 `boxing-gym/src/boxing_gym/envs/` 下新建 `alice_charlie.py` env | 纯 additive，模仿 [dugongs.py](../boxing-gym/src/boxing_gym/envs/dugongs.py) 写 Alice-Charlie 体重-脚印 PyMC 模型 | 能 instantiate + `step()` + 手算后验对齐 | **L1 原创**（MEIS 核心案例）| 无 |
+| **2** | 新建独立包 `MEIS/phase2_prior_library/` with `human_body.json` + 10 条 curated 关系 + `retrieval.py` | 和 boxing-gym 完全解耦，纯数据 | 给关键词返回关系列表 | **L3 原创**（跨域先验库冷启动）| 无 |
+| **3** | 在 `MEIS/phase1_mvp/agents/` 新建 `PriorInjectingExperimenter`，**继承** `boxing_gym.agents.LMExperimenter` | 不改 boxing-gym，只继承 | Step 1 env 上跑一次，确认先验进了 system prompt | **L4 原创**（LLM 从"裁判"降级到"证人+翻译"）| 无 |
+| **4** | 对照跑：Step 0 baseline agent vs Step 3 prior-injecting agent（都在 Step 1 的 Alice-Charlie env 上）| 只是运行+比较，不改代码 | prediction error / 后验熵下降速度对比表 | 验证 MEIS L3+L4 有效性 | 无 |
+| **5** | **如果** Step 3 发现 prompt 里变量/单位/依赖结构太乱需要 schema 化，**才**引入 AutoToM `Variable` dataclass 到 `phase1_mvp/variable_schema.py` | 小手术，5-10 行代码借用 | 重跑 Step 4 验证 perf 至少不回退 | **L4 接口规范化** | **条件借 AutoToM** |
+| **6** | 新建 `phase3_embedding/kl_drift.py` 计算 $D_{KL}(P(\mathcal{B})\|P(\mathcal{B}\|h))$（多假设排序版），在 Step 1 env 上跑一个"Alice 比 Charlie 重因为 X" 多解释排序 | 全新模块，独立于 boxing-gym | 三个候选解释的 KL 排序符合直觉 | **L3 理论核心**（Phase 3 原创）| 无 |
+
+**到 Step 6 结束 = Phase 1 MVP 完成**，产出：
+- 一个 MEIS 自己的 env（Alice-Charlie）
+- 一个跨域先验库 v0
+- 一个 prior-injecting agent
+- 一张 baseline vs MEIS 对照表
+- 一个最小扰动评分原型
+
+全在 boxing-gym 的躯干上长出来，**没拼马头**。
+
+### 4.4 方向审计（每 Step 结束问的三个问题）
+
+任一个答"否"就暂停检查：
+
+1. **L 层归属清晰吗？** 这一步的代码明确属于 L1/L2/L3/L4 哪一层？如果跨层说不清，拆开
+2. **MEIS 能不能抽走 boxing-gym 还活着？** 如果 MEIS 自己的代码深度依赖 boxing-gym 具体实现（不是接口），就是在向 boxing-gym 靠，不是把它当基座
+3. **有没有做 MEIS_plan.md 里没说要做的东西？** 有就是 scope creep，记下来下期再议
 
 ---
 
-## 5. 决策记录（后续如遇分歧时翻旧账用）
+## 5. 第一周日历视图（可选，与第 4 节对齐）
+
+> 4.3 节的 Step-gated 是主驱动；本节只是把 7 步摊到 7 天的节奏参考。遇到某 Step 验证不过，日历顺延，不跳过。
+
+| 天 | Step | 具体动作 |
+|---|---|---|
+| 1–2 | Step 0 | `export ANTHROPIC_API_KEY=...`; `python boxing-gym/run_experiment.py envs=dugongs llms=anthropic seed=0` |
+| 3 | Step 1 | `phase1_mvp/envs/alice_charlie.py` (模仿 dugongs) |
+| 4 | Step 2 | `phase2_prior_library/human_body.json` (10 条) + `retrieval.py` |
+| 5 | Step 3 | `phase1_mvp/agents/prior_injecting_experimenter.py` (继承 `LMExperimenter`) |
+| 6 | Step 4 | 对照实验跑 + 记录对比数字 |
+| 7 | Step 5 / 6 | 按需做 schema 化 (Step 5) 或直接进 KL 扰动度原型 (Step 6) |
+
+---
+
+## 6. 决策记录（后续如遇分歧时翻旧账用）
 
 | 决策 | 时间 | 理由 |
 |---|---|---|
