@@ -21,6 +21,12 @@ from pathlib import Path
 
 import numpy as np
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+except ImportError:
+    pass
+
 from boxing_gym.agents.agent import LMExperimenter
 from phase1_mvp.envs.alice_charlie import AliceCharlie, DirectGoalNaive
 
