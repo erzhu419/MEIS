@@ -12,11 +12,13 @@ from phase2_prior_library.retrieval import PriorLibrary
 
 def test_load():
     lib = PriorLibrary.load_default()
-    assert len(lib.entries) == 10, f"expected 10 entries, got {len(lib.entries)}"
+    assert len(lib.entries) == 14, f"expected 14 entries, got {len(lib.entries)}"
     domains = {e.get("domain") for e in lib.entries}
     assert "human_body" in domains
     assert "classical_mechanics" in domains
     assert "soil_mechanics" in domains
+    assert "biology" in domains
+    assert "dynamics" in domains
     # schema check
     for e in lib.entries:
         assert "id" in e and "keywords" in e and "statement" in e
@@ -48,6 +50,23 @@ def test_retrieval_component_priors():
     ids = [h["id"] for h in hits]
     assert "human_body_volume_from_height" in ids, f"got {ids}"
     print(f"[PASS] query 'volume height cube' → top-2: {ids}")
+
+
+def test_retrieval_dugongs_critical_path():
+    """Dugongs query 'predict length given age' must surface at least one
+    saturating-growth prior in the top-3."""
+    lib = PriorLibrary.load_default()
+    hits = lib.retrieve("predict length given age", k=5)
+    ids = [h["id"] for h in hits]
+    growth_ids = {"asymptotic_growth_law", "von_bertalanffy_growth",
+                  "saturating_growth_law_alternate", "large_mammal_growth_heuristics"}
+    found = set(ids) & growth_ids
+    assert len(found) >= 2, f"fewer than 2 growth-curve priors in top-5: {ids}"
+    # Ensure at least one of the two canonical functional-form entries is top-3
+    canonical = {"asymptotic_growth_law", "von_bertalanffy_growth", "saturating_growth_law_alternate"}
+    top3 = set(ids[:3])
+    assert top3 & canonical, f"no canonical growth form in top-3: {ids}"
+    print(f"[PASS] query 'predict length given age' → top-5: {ids}")
 
 
 def test_retrieval_cross_domain():
@@ -96,6 +115,7 @@ if __name__ == "__main__":
     print("=== Step 2 validation: prior library + retrieval ===\n")
     test_load()
     test_retrieval_alice_charlie_critical_path()
+    test_retrieval_dugongs_critical_path()
     test_retrieval_component_priors()
     test_retrieval_cross_domain()
     test_domain_filter()

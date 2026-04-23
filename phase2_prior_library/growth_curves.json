@@ -1,0 +1,58 @@
+[
+  {
+    "id": "asymptotic_growth_law",
+    "domain": "dynamics",
+    "keywords": ["growth", "saturation", "asymptote", "decay", "age", "time"],
+    "vars_involved": ["Y", "t"],
+    "statement": "Systems with bounded growth approach an asymptote as Y(t) = Y_max - (Y_max - Y_0) · decay^t, where Y_max is the equilibrium value, Y_0 is the initial value, and 0 < decay < 1 controls how fast the asymptote is approached. At t=0, Y=Y_0; as t→∞, Y→Y_max. Equivalent to exponential-decay-toward-a-limit. Each unit of t multiplies the remaining gap by `decay`.",
+    "formal": {
+      "relation": "Y(t) = Y_max - (Y_max - Y_0) * decay**t",
+      "parameters_hint": {"decay_in_0_to_1": true},
+      "alternate_form": "Y(t) = Y_max - delta * decay**t  (with delta = Y_max - Y_0)"
+    },
+    "source": "standard dynamical-systems form for bounded growth",
+    "confidence": "exact (given the functional form applies)",
+    "cross_domain_isomorph": "RC capacitor charging V(t)=V∞(1-e^(-t/RC)); Newton cooling T(t)=T_amb+(T_0-T_amb)·e^(-kt); radioactive-decay complement; first-order reaction kinetics saturating product."
+  },
+  {
+    "id": "von_bertalanffy_growth",
+    "domain": "biology",
+    "keywords": ["von bertalanffy", "growth", "length", "age", "fish", "mammal", "aquatic"],
+    "vars_involved": ["length", "age", "L_infinity", "k"],
+    "statement": "Von Bertalanffy growth function: L(age) = L_∞ · (1 - e^(-k·(age - age_0))). Used widely in fishery biology and for marine mammals (whales, seals, sirenians). L_∞ is the asymptotic length an individual approaches in old age; k is a growth rate constant (larger = faster saturation); age_0 is the age at theoretical zero length (usually slightly negative).",
+    "formal": {
+      "relation": "length = L_inf * (1 - exp(-k * (age - age_0)))",
+      "parameters_hint": {"L_inf": "adult asymptotic length", "k": "growth rate 0.05-0.5 typical for large mammals", "age_0": "~ -0.5 to 0"}
+    },
+    "source": "von Bertalanffy (1938); standard in fishery science",
+    "confidence": "widely validated empirically for fish / marine mammals"
+  },
+  {
+    "id": "saturating_growth_law_alternate",
+    "domain": "biology",
+    "keywords": ["growth", "saturation", "length", "age", "bounded"],
+    "vars_involved": ["Y", "t"],
+    "statement": "An equivalent parameterisation of saturating growth used in some biology texts: Y(t) = α - β · γ^t, where α is the asymptote, β = α - Y_0 (initial gap to asymptote), and γ is the per-time-unit fraction of remaining gap retained (0<γ<1). At t=0, Y=α-β=Y_0. At large t, Y→α.",
+    "formal": {
+      "relation": "Y(t) = alpha - beta * gamma**t",
+      "parameters_hint": {"alpha": "asymptote (Y_max)", "beta": "alpha - Y_0", "gamma": "in (0, 1); smaller = faster saturation"}
+    },
+    "source": "common in Bayesian modeling textbooks (e.g., Gelman et al.) for length-at-age data",
+    "confidence": "equivalent to asymptotic_growth_law; both fit same data"
+  },
+  {
+    "id": "large_mammal_growth_heuristics",
+    "domain": "biology",
+    "keywords": ["mammal", "growth", "age", "length", "body size", "maturity"],
+    "vars_involved": ["adult_length", "age_at_maturity", "juvenile_length"],
+    "statement": "Large mammals (whales, manatees, dugongs, elephants) show strongly diminishing returns with age. Length at birth is ~25-50% of adult asymptote; most growth occurs in the first 20-30% of lifespan; near-asymptotic size reached by age ~10-20 years. Past maturity, length changes very slowly.",
+    "formal": {
+      "qualitative_fractions": {
+        "L_at_birth_over_L_adult": "~0.3-0.5",
+        "L_at_half_lifespan_over_L_adult": "~0.95+"
+      }
+    },
+    "source": "comparative mammalian biology (life-history tables)",
+    "confidence": "medium (species-specific variation)"
+  }
+]

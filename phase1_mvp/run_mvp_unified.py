@@ -23,8 +23,9 @@ from pathlib import Path
 import numpy as np
 
 from boxing_gym.agents.agent import LMExperimenter
+from boxing_gym.envs.dugongs import Dugongs, DirectGoalNaive as DugongsDirectGoalNaive
 
-from phase1_mvp.envs.alice_charlie import AliceCharlie, DirectGoalNaive
+from phase1_mvp.envs.alice_charlie import AliceCharlie, DirectGoalNaive as AliceCharlieDirectGoalNaive
 from phase1_mvp.agents.prior_injecting_experimenter import (
     PriorInjectingExperimenter, DEFAULT_PRIOR_HEADER,
 )
@@ -32,19 +33,30 @@ from phase2_prior_library.retrieval import PriorLibrary
 
 
 MAX_TRIES = 3
-ALICE_CHARLIE_QUERY = "predict weight given height"
 RUNS_ROOT = Path(__file__).parent / "runs"
 RUNS_ROOT.mkdir(exist_ok=True)
 
+# Per-env retrieval queries — should land the critical-path prior in top-3.
+PRIOR_QUERIES = {
+    "alice_charlie": "predict weight given height",
+    "dugongs":       "predict length given age",
+}
+
+ENV_REGISTRY = {
+    "alice_charlie": (AliceCharlie, AliceCharlieDirectGoalNaive),
+    "dugongs":       (Dugongs,      DugongsDirectGoalNaive),
+}
+
 
 def _make_agent(kind: str, *, model_name: str, library: PriorLibrary,
+                prior_query: str,
                 temperature: float, max_tokens: int, prior_k: int):
     if kind == "plain":
         return LMExperimenter(model_name=model_name, temperature=temperature, max_tokens=max_tokens)
     elif kind == "prior_injected":
         return PriorInjectingExperimenter(
             model_name=model_name, library=library,
-            prior_query=ALICE_CHARLIE_QUERY, prior_k=prior_k,
+            prior_query=prior_query, prior_k=prior_k,
             temperature=temperature, max_tokens=max_tokens,
         )
     raise ValueError(f"unknown agent kind: {kind}")
@@ -65,6 +77,7 @@ def config_tag(scientist_priors: bool, novice_priors: bool, echo_anchor: bool) -
 
 
 def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
+            env_name: str = "alice_charlie",
             scientist_priors: bool = False, novice_priors: bool = False,
             echo_anchor: bool = True,
             prior_k: int = 5,
@@ -75,17 +88,22 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
     random.seed(seed)
     np.random.seed(seed)
 
+    env_cls, goal_cls = ENV_REGISTRY[env_name]
+    prior_query = PRIOR_QUERIES[env_name]
+
     library = PriorLibrary.load_default()
-    env = AliceCharlie()
+    env = env_cls()
     env.include_prior = include_prior
-    goal = DirectGoalNaive(env)
+    goal = goal_cls(env)
 
     scientist = _make_agent("prior_injected" if scientist_priors else "plain",
                             model_name=model_name, library=library,
+                            prior_query=prior_query,
                             temperature=temperature, max_tokens=max_tokens,
                             prior_k=prior_k)
     novice = _make_agent("prior_injected" if novice_priors else "plain",
                          model_name=model_name, library=library,
+                         prior_query=prior_query,
                          temperature=temperature, max_tokens=max_tokens,
                          prior_k=prior_k)
 
@@ -134,8 +152,8 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
     err_mean, err_std = goal.evaluate_predictions(predictions, gts)
 
     tag = config_tag(scientist_priors, novice_priors, echo_anchor)
-    out_dir = RUNS_ROOT / tag
-    out_dir.mkdir(exist_ok=True)
+    out_dir = RUNS_ROOT / env_name / tag
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     retrieved_ids_sci = (getattr(scientist, "last_prior_hits", None) or [])
     retrieved_ids_sci = [h["id"] for h in retrieved_ids_sci]
@@ -146,14 +164,14 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
         "config": {
             "seed": seed, "include_prior": include_prior, "use_ppl": False,
             "llms": {"model_name": model_name, "temperature": temperature, "max_tokens": max_tokens},
-            "envs": {"env_name": "alice_charlie", "goal_name": "direct_discovery", "num_evals": num_evals},
+            "envs": {"env_name": env_name, "goal_name": "direct_discovery", "num_evals": num_evals},
             "exp": {"num_experiments": [num_experiments], "experiment_type": "discovery"},
             "meis": {
                 "config_tag": tag,
                 "scientist_priors": scientist_priors,
                 "novice_priors": novice_priors,
                 "echo_anchor": echo_anchor,
-                "prior_query": ALICE_CHARLIE_QUERY,
+                "prior_query": prior_query,
                 "prior_k": prior_k,
                 "prior_header": DEFAULT_PRIOR_HEADER,
                 "scientist_retrieved_ids": retrieved_ids_sci,
@@ -183,13 +201,15 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--model", type=str, default="gpt-5.4")
+    p.add_argument("--env", type=str, default="alice_charlie",
+                   choices=list(ENV_REGISTRY.keys()))
     p.add_argument("--scientist-priors", action="store_true")
     p.add_argument("--novice-priors", action="store_true")
     p.add_argument("--no-echo-anchor", action="store_true")
     p.add_argument("--prior-k", type=int, default=5)
     args = p.parse_args()
     run_mvp(
-        seed=args.seed, model_name=args.model,
+        seed=args.seed, model_name=args.model, env_name=args.env,
         scientist_priors=args.scientist_priors,
         novice_priors=args.novice_priors,
         echo_anchor=not args.no_echo_anchor,

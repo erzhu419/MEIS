@@ -24,6 +24,7 @@ from typing import Any
 _LIB_DIR = Path(__file__).parent
 DEFAULT_FILES = [
     "human_body.json",
+    "growth_curves.json",
 ]
 
 

@@ -1,0 +1,183 @@
+{
+  "config": {
+    "seed": 12,
+    "include_prior": true,
+    "use_ppl": false,
+    "llms": {
+      "model_name": "gpt-5.4",
+      "temperature": 0.0,
+      "max_tokens": 512
+    },
+    "envs": {
+      "env_name": "dugongs",
+      "goal_name": "direct_discovery",
+      "num_evals": 10
+    },
+    "exp": {
+      "num_experiments": [
+        10
+      ],
+      "experiment_type": "discovery"
+    },
+    "meis": {
+      "config_tag": "meis_full_noecho",
+      "scientist_priors": true,
+      "novice_priors": true,
+      "echo_anchor": false,
+      "prior_query": "predict length given age",
+      "prior_k": 5,
+      "prior_header": "Cross-domain prior knowledge (from the MEIS curated library). Treat these relations as well-established background facts you can use to structure your hypotheses, choose informative observations, and explain the system to others. You do not need to rediscover them from data:",
+      "scientist_retrieved_ids": [
+        "von_bertalanffy_growth",
+        "large_mammal_growth_heuristics",
+        "saturating_growth_law_alternate",
+        "shoe_size_foot_length",
+        "foot_area_from_foot_length"
+      ],
+      "novice_retrieved_ids": [
+        "von_bertalanffy_growth",
+        "large_mammal_growth_heuristics",
+        "saturating_growth_law_alternate",
+        "shoe_size_foot_length",
+        "foot_area_from_foot_length"
+      ]
+    }
+  },
+  "data": {
+    "results": [
+      [
+        [
+          0.0478848632803895,
+          0.09478011347281275
+        ],
+        [
+          "Predict the length of a sea cow at age: 1.6528863756772594. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 2.3116598978542213. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 1.0999419764018918. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 0.5953769912388788. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 2.3375973682186646. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 2.122968874866085. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 1.302826178329285. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 0.9330168090754795. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 0.268329706892969. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>",
+          "Predict the length of a sea cow at age: 1.1234023088681726. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>"
+        ],
+        [
+          0.947094335299792,
+          1.8136467545304762,
+          1.0827741820908632,
+          0.7496138537771224,
+          1.3820758454492799,
+          1.192671820346067,
+          0.9940057444644488,
+          0.6200618277604848,
+          0.5491282181887287,
+          0.8469502995394305
+        ],
+        [
+          "1.018",
+          "1.243050408",
+          "0.809677",
+          "0.603",
+          "1.251",
+          "1.181",
+          "0.888",
+          "0.743",
+          "0.4613",
+          "0.819"
+        ]
+      ]
+    ],
+    "queries": [
+      "0.2",
+      "2.5",
+      "4.8",
+      "1.0",
+      "0.0",
+      "3.5",
+      "5.0",
+      "3.0",
+      "4.0",
+      "4.5"
+    ],
+    "observations": [
+      0.35630294195156104,
+      1.6966896994457052,
+      1.983103941123279,
+      0.6726924779125516,
+      0.3377630423565372,
+      1.4847724370980644,
+      2.1394643440746925,
+      1.2815720323060937,
+      1.446501036443533,
+      1.9789330814861235
+    ],
+    "successes": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "explanations": [
+      "<thought>I should give a compact, self-contained prediction rule and explain the shape intuitively, without mentioning any specific measurements we collected.</thought>\n<answer>Predict dugong length from age using a mostly increasing, saturating curve: length grows quickly when young, then growth slows, approaching about 2.1 by age 5. A practical rule is\n\nlength(age) \u2248 0.34 + 0.46\u00b7age \u2212 0.03\u00b7age\u00b2\n\nfor ages 0 to 5.\n\nThis gives a simple way to estimate:\n- age 0 \u2192 length \u2248 0.34\n- age 1 \u2192 \u2248 0.77\n- age 2 \u2192 \u2248 1.14\n- age 3 \u2192 \u2248 1.45\n- age 4 \u2192 \u2248 1.70\n- age 5 \u2192 \u2248 1.89\n\nInterpretation: the sea cow starts fairly small, grows fastest early on, and then the rate of increase declines. If you want a biological intuition, think \u201crapid juvenile growth, then leveling off toward an adult size.\u201d So for any age between 0 and 5, plug the age into the formula above. If you prefer a simpler mental model, imagine a curve starting near 0.34 at birth and bending upward more slowly over time, ending near 2 by age 5.</answer>"
+    ],
+    "eigs": [],
+    "programs": []
+  },
+  "scientist_messages": [
+    "role:system, messaage:Sea cows are different lengths at different ages.\nYour goal is to conduct experiments and explain the environment to the user so that they can achieve their goal. The goal of the user is to be able to predict the length of a sea cow given its age.\nMake observations by specifying a single age you want to observe with a real number.\nThe environment will return the length of a dugong at that age.\nThe age values are between 0 and 5.\nYou may also think before providing your predictions.\n\nHere is an example:\n<thought> your thought </thought>\n<observe>2</observe>\nWhen asked to answer a question about the environment, respond in the format specified in the question.\n<thought> your thought </thought>\n<answer> your answer </answer>\n\n\nCross-domain prior knowledge (from the MEIS curated library). Treat these relations as well-established background facts you can use to structure your hypotheses, choose informative observations, and explain the system to others. You do not need to rediscover them from data:\n- [von_bertalanffy_growth] (biology): Von Bertalanffy growth function: L(age) = L_\u221e \u00b7 (1 - e^(-k\u00b7(age - age_0))). Used widely in fishery biology and for marine mammals (whales, seals, sirenians). L_\u221e is the asymptotic length an individual approaches in old age; k is a growth rate constant (larger = faster saturation); age_0 is the age at theoretical zero length (usually slightly negative).\n    Formal: length = L_inf * (1 - exp(-k * (age - age_0)))\n- [large_mammal_growth_heuristics] (biology): Large mammals (whales, manatees, dugongs, elephants) show strongly diminishing returns with age. Length at birth is ~25-50% of adult asymptote; most growth occurs in the first 20-30% of lifespan; near-asymptotic size reached by age ~10-20 years. Past maturity, length changes very slowly.\n- [saturating_growth_law_alternate] (biology): An equivalent parameterisation of saturating growth used in some biology texts: Y(t) = \u03b1 - \u03b2 \u00b7 \u03b3^t, where \u03b1 is the asymptote, \u03b2 = \u03b1 - Y_0 (initial gap to asymptote), and \u03b3 is the per-time-unit fraction of remaining gap retained (0<\u03b3<1). At t=0, Y=\u03b1-\u03b2=Y_0. At large t, Y\u2192\u03b1.\n    Formal: Y(t) = alpha - beta * gamma**t\n- [shoe_size_foot_length] (human_body): European shoe size (EU) relates to foot length by shoe_size_eu \u2248 1.5 \u00b7 foot_length_cm + 2 (approximate; different manufacturers vary). Adult foot length ~22-29 cm \u2192 EU 35-45.\n    Formal: shoe_size_eu = 1.5 * foot_length_cm + 2.0\n- [foot_area_from_foot_length] (human_body): Sole contact area for an adult foot, when standing barefoot, is roughly 0.5 \u00b7 foot_length^2 \u00d7 aspect_ratio, giving typical values of 140-180 cm^2 for adult feet. Rough rule: foot_area_cm2 \u2248 0.3 \u00d7 foot_length_cm^2 (moderate-precision anthropometric estimate).\n    Formal: foot_area_cm2 = 0.3 * foot_length_cm**2",
+    "role:user, messaage:Think about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\n<thought>your thought</thought>\n<observe> your observation</observe>\nMake an observation now.",
+    "role:assistant, messaage:",
+    "role:user, messaage:Please stick to the specified format and respond using <observe> tags. Continue making observations even if you think you have an accurate estimate. Your previous response was not valid.",
+    "role:assistant, messaage:<thought>I'll start by probing near the lower boundary to anchor the initial size, since saturating growth models are easiest to fit when we know the young-age length. After that, I can compare with mid and upper ages to estimate the asymptote and growth rate.</thought>\n<observe>0.2</observe>",
+    "role:user, messaage:Result: 0.35630294195156104\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>The first point at age 0.2 gives a small juvenile length. Since dugong growth should be saturating, the most informative next measurement is in the middle of the range, where curvature is easier to detect and we can begin estimating both the growth rate and eventual asymptote.</thought>\n<observe>2.5</observe>",
+    "role:user, messaage:Result: 1.6966896994457052\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>With an early-age point and a mid-range point, the next most informative measurement is near the upper boundary to see how close length is to its asymptote by age 5. That will help distinguish among saturating growth curves and pin down the adult-size plateau.</thought>\n<observe>4.8</observe>",
+    "role:user, messaage:Result: 1.983103941123279\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>The upper-age point suggests the curve is already close to a plateau near length 2, so the biggest remaining uncertainty is the early growth rate and any age offset. An observation around age 1 should be highly informative because it sits between the very young point and the mid-range point, helping constrain the steep part of the saturating curve.</thought>\n<observe>1.0</observe>",
+    "role:user, messaage:Result: 0.6726924779125516\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>We now have coverage at young, intermediate, and near-plateau ages. To refine the age offset and initial length in a saturating growth model, the most useful next point is the lower boundary at age 0, which helps anchor the curve's intercept and improves prediction accuracy across the whole 0 to 5 range.</thought>\n<observe>0.0</observe>",
+    "role:user, messaage:Result: 0.3377630423565372\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>The current measurements suggest a smooth saturating curve with asymptote near 2, and the main remaining uncertainty is exactly how quickly the approach to that plateau happens after the midpoint. A measurement around age 3.5 will fill the gap between 2.5 and 4.8 and help distinguish slightly different saturation rates.</thought>\n<observe>3.5</observe>",
+    "role:user, messaage:Result: 1.4847724370980644\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>We have a suspicious pattern: the age 3.5 value is lower than the age 2.5 value, which is inconsistent with a simple monotone saturating growth curve and suggests either noise or that the true curve is not exactly the first model I had in mind. The best next measurement is at the upper boundary, age 5.0, to directly assess the late-age level and determine whether 4.8 was representative of the plateau.</thought>\n<observe>5.0</observe>",
+    "role:user, messaage:Result: 2.1394643440746925\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>The measurements mostly follow increasing growth, but the drop from age 2.5 to 3.5 looks anomalous relative to the neighboring late-age points. The most informative next observation is around age 3.0, right between those two ages, because it will help determine whether the 3.5 value was noise and refine the shape of the curve in the transition toward the plateau.</thought>\n<observe>3.0</observe>",
+    "role:user, messaage:Result: 1.2815720323060937\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>Now the ages 2.5, 3.0, and 3.5 appear to form a locally decreasing region before rising again by 4.8 and 5.0, so the environment may include noise or a more irregular growth pattern than a simple monotone saturating law. To test whether that dip is localized and improve interpolation in the late-middle range, I should observe at age 4.0.</thought>\n<observe>4.0</observe>",
+    "role:user, messaage:Result: 1.446501036443533\nThink about where to observe next. Articulate your strategy for choosing measurements in <thought>.\nProvide a new measurement point in the format:\nThought: <thought>\n<observe> your observation (remember the type of inputs accepted)</observe>",
+    "role:assistant, messaage:Thought: <thought>The sequence from 2.5 to 5.0 suggests a dip followed by recovery, so the key uncertainty is where the late-age minimum occurs and how sharply the curve turns upward afterward. An observation at age 4.5 will tighten our understanding of that transition and improve predictions in the upper part of the age range.</thought>\n<observe>4.5</observe>",
+    "role:user, messaage:Assume that the user has no prior knowledge, and will not be able to run any experiments before making predictions. \nThey will make predictions based solely on your explanation, so provide as much detail as possible. You CANNOT provide your own experiments or observations.\nLimit your explanation to 200 words.",
+    "role:assistant, messaage:<thought>I should give a compact, self-contained prediction rule and explain the shape intuitively, without mentioning any specific measurements we collected.</thought>\n<answer>Predict dugong length from age using a mostly increasing, saturating curve: length grows quickly when young, then growth slows, approaching about 2.1 by age 5. A practical rule is\n\nlength(age) \u2248 0.34 + 0.46\u00b7age \u2212 0.03\u00b7age\u00b2\n\nfor ages 0 to 5.\n\nThis gives a simple way to estimate:\n- age 0 \u2192 length \u2248 0.34\n- age 1 \u2192 \u2248 0.77\n- age 2 \u2192 \u2248 1.14\n- age 3 \u2192 \u2248 1.45\n- age 4 \u2192 \u2248 1.70\n- age 5 \u2192 \u2248 1.89\n\nInterpretation: the sea cow starts fairly small, grows fastest early on, and then the rate of increase declines. If you want a biological intuition, think \u201crapid juvenile growth, then leveling off toward an adult size.\u201d So for any age between 0 and 5, plug the age into the formula above. If you prefer a simpler mental model, imagine a curve starting near 0.34 at birth and bending upward more slowly over time, ending near 2 by age 5.</answer>"
+  ],
+  "naive_messages": [
+    "role:system, messaage:Your goal is to predict the length of a sea cow given its age.\nYou will be provided an input to this environment and will be tasked with predicting the output for each input.\nYou must respond with a real number. You may also think before providing your predictions.\nHere is an example:\n<thought>your thought</thought>\n<answer>1</answer>Here is what you know about the environment:\n<thought>I should give a compact, self-contained prediction rule and explain the shape intuitively, without mentioning any specific measurements we collected.</thought>\n<answer>Predict dugong length from age using a mostly increasing, saturating curve: length grows quickly when young, then growth slows, approaching about 2.1 by age 5. A practical rule is\n\nlength(age) \u2248 0.34 + 0.46\u00b7age \u2212 0.03\u00b7age\u00b2\n\nfor ages 0 to 5.\n\nThis gives a simple way to estimate:\n- age 0 \u2192 length \u2248 0.34\n- age 1 \u2192 \u2248 0.77\n- age 2 \u2192 \u2248 1.14\n- age 3 \u2192 \u2248 1.45\n- age 4 \u2192 \u2248 1.70\n- age 5 \u2192 \u2248 1.89\n\nInterpretation: the sea cow starts fairly small, grows fastest early on, and then the rate of increase declines. If you want a biological intuition, think \u201crapid juvenile growth, then leveling off toward an adult size.\u201d So for any age between 0 and 5, plug the age into the formula above. If you prefer a simpler mental model, imagine a curve starting near 0.34 at birth and bending upward more slowly over time, ending near 2 by age 5.</answer>\n\nCross-domain prior knowledge (from the MEIS curated library). Treat these relations as well-established background facts you can use to structure your hypotheses, choose informative observations, and explain the system to others. You do not need to rediscover them from data:\n- [von_bertalanffy_growth] (biology): Von Bertalanffy growth function: L(age) = L_\u221e \u00b7 (1 - e^(-k\u00b7(age - age_0))). Used widely in fishery biology and for marine mammals (whales, seals, sirenians). L_\u221e is the asymptotic length an individual approaches in old age; k is a growth rate constant (larger = faster saturation); age_0 is the age at theoretical zero length (usually slightly negative).\n    Formal: length = L_inf * (1 - exp(-k * (age - age_0)))\n- [large_mammal_growth_heuristics] (biology): Large mammals (whales, manatees, dugongs, elephants) show strongly diminishing returns with age. Length at birth is ~25-50% of adult asymptote; most growth occurs in the first 20-30% of lifespan; near-asymptotic size reached by age ~10-20 years. Past maturity, length changes very slowly.\n- [saturating_growth_law_alternate] (biology): An equivalent parameterisation of saturating growth used in some biology texts: Y(t) = \u03b1 - \u03b2 \u00b7 \u03b3^t, where \u03b1 is the asymptote, \u03b2 = \u03b1 - Y_0 (initial gap to asymptote), and \u03b3 is the per-time-unit fraction of remaining gap retained (0<\u03b3<1). At t=0, Y=\u03b1-\u03b2=Y_0. At large t, Y\u2192\u03b1.\n    Formal: Y(t) = alpha - beta * gamma**t\n- [shoe_size_foot_length] (human_body): European shoe size (EU) relates to foot length by shoe_size_eu \u2248 1.5 \u00b7 foot_length_cm + 2 (approximate; different manufacturers vary). Adult foot length ~22-29 cm \u2192 EU 35-45.\n    Formal: shoe_size_eu = 1.5 * foot_length_cm + 2.0\n- [foot_area_from_foot_length] (human_body): Sole contact area for an adult foot, when standing barefoot, is roughly 0.5 \u00b7 foot_length^2 \u00d7 aspect_ratio, giving typical values of 140-180 cm^2 for adult feet. Rough rule: foot_area_cm2 \u2248 0.3 \u00d7 foot_length_cm^2 (moderate-precision anthropometric estimate).\n    Formal: foot_area_cm2 = 0.3 * foot_length_cm**2",
+    "role:user, messaage:Predict the length of a sea cow at age: 1.6528863756772594. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>1.018</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 2.3116598978542213. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>1.243050408</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 1.0999419764018918. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.809677</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 0.5953769912388788. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.603</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 2.3375973682186646. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>1.251</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 2.122968874866085. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>1.181</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 1.302826178329285. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.888</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 0.9330168090754795. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.743</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 0.268329706892969. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.4613</answer>",
+    "role:user, messaage:Predict the length of a sea cow at age: 1.1234023088681726. \nWhen asked to answer a question about the environment, respond in the format specified below. Make assumptions about the environment and provide your best guess.\nHere is an example.\n<thought> your thought </thought>\n<answer>1</answer>\nAnswer in the following format:\n<answer>your answer</answer>.",
+    "role:assistant, messaage:<answer>0.819</answer>"
+  ]
+}
