@@ -1,0 +1,147 @@
+[
+  {
+    "id": "human_density_adult",
+    "domain": "human_body",
+    "keywords": ["density", "body density", "human", "adult", "weight", "volume"],
+    "vars_involved": ["body_density_kg_m3"],
+    "statement": "Adult human body density is near-constant at approximately 1010 kg/m^3, varying by only about 2-3% across individuals (slightly less for muscular, slightly more for lean build). Water is 1000 kg/m^3; fat is slightly less dense; bone and muscle slightly more.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 1010.0,
+      "sigma": 30.0,
+      "units": "kg/m^3"
+    },
+    "source": "physiology; Shaw & Costill, Physiology of Sport and Exercise (widely cited)",
+    "confidence": "high"
+  },
+  {
+    "id": "human_body_volume_from_height",
+    "domain": "human_body",
+    "keywords": ["volume", "body volume", "height", "geometry", "allometry"],
+    "vars_involved": ["body_volume_m3", "height_cm"],
+    "statement": "Adult human body volume scales approximately with the cube of height: volume_m3 ≈ k · height_cm^3, where k ≈ 1.4e-8 m^3/cm^3. This is the geometric consequence of isometric scaling (similar body shapes at different sizes).",
+    "formal": {
+      "relation": "volume_m3 = k * height_cm**3",
+      "parameters": {"k_mu": 1.4e-8, "k_sigma": 7e-10},
+      "units": {"volume": "m^3", "height": "cm"}
+    },
+    "source": "derived from anthropometric norms (70 kg / 1010 kg/m^3 ≈ 0.069 m^3 at 170 cm)",
+    "confidence": "medium (ignores body-type variation; adequate within 5-10%)"
+  },
+  {
+    "id": "weight_from_height_cube_law",
+    "domain": "human_body",
+    "keywords": ["weight", "height", "cube law", "allometry", "body mass"],
+    "vars_involved": ["weight_kg", "height_cm"],
+    "statement": "Weight scales approximately as the cube of height: weight_kg ≈ theta · height_cm^3 + noise, with theta ≈ 1.414e-5 kg/cm^3 (= body_density × volume_coefficient). This is derivable from the two priors above and agrees with adult population data: 170 cm → ~70 kg, 150 cm → ~48 kg, 190 cm → ~97 kg.",
+    "formal": {
+      "relation": "weight_kg = theta * height_cm**3 + Normal(0, sigma)",
+      "parameters": {"theta_mu": 1.414e-5, "theta_sigma": 4e-7, "sigma_kg": 2.0},
+      "units": {"weight": "kg", "height": "cm"}
+    },
+    "source": "composed from human_density_adult × human_body_volume_from_height",
+    "confidence": "medium-high for typical adults",
+    "cross_domain_isomorph": "This cube-law form recurs in: tree biomass vs trunk diameter, fish mass vs length, planet mass vs radius (at fixed density). Same mathematical structure as any density × volume composition."
+  },
+  {
+    "id": "bmi_adult_population",
+    "domain": "human_body",
+    "keywords": ["bmi", "body mass index", "weight", "height", "population"],
+    "vars_involved": ["bmi", "weight_kg", "height_m"],
+    "statement": "BMI = weight_kg / height_m^2. Adult population mean BMI ≈ 22-25, with std ≈ 4. Note BMI uses height² not height³ — an empirical fit to the observed narrower relationship between weight and height at the population (not individual) level.",
+    "formal": {
+      "relation": "bmi = weight_kg / (height_cm / 100)**2",
+      "distribution": {"type": "Normal", "mu": 23.0, "sigma": 4.0},
+      "units": {"bmi": "kg/m^2"}
+    },
+    "source": "WHO/NIH adult obesity classification data",
+    "confidence": "high for population, low for individual prediction"
+  },
+  {
+    "id": "adult_height_distribution",
+    "domain": "human_body",
+    "keywords": ["height", "adult", "population", "stature"],
+    "vars_involved": ["height_cm"],
+    "statement": "Adult human heights (combined sexes, developed nations) are approximately Normal-distributed with mean 170 cm and std 10 cm. Adult males mean ~177, adult females mean ~163.",
+    "formal": {
+      "distribution": {"type": "Normal", "mu": 170.0, "sigma": 10.0},
+      "units": "cm",
+      "range_99pct": [145, 195]
+    },
+    "source": "CDC/WHO anthropometric surveys",
+    "confidence": "high"
+  },
+  {
+    "id": "adult_weight_distribution",
+    "domain": "human_body",
+    "keywords": ["weight", "adult", "population", "mass"],
+    "vars_involved": ["weight_kg"],
+    "statement": "Adult human weights are approximately Normal-distributed with mean ~70 kg and std ~12 kg, with a slight right skew. Correlated with height (corr ≈ 0.6).",
+    "formal": {
+      "distribution": {"type": "Normal", "mu": 70.0, "sigma": 12.0},
+      "units": "kg"
+    },
+    "source": "CDC anthropometric surveys",
+    "confidence": "high"
+  },
+  {
+    "id": "shoe_size_foot_length",
+    "domain": "human_body",
+    "keywords": ["shoe", "shoe size", "foot", "foot length", "anthropometry"],
+    "vars_involved": ["shoe_size_eu", "foot_length_cm"],
+    "statement": "European shoe size (EU) relates to foot length by shoe_size_eu ≈ 1.5 · foot_length_cm + 2 (approximate; different manufacturers vary). Adult foot length ~22-29 cm → EU 35-45.",
+    "formal": {
+      "relation": "shoe_size_eu = 1.5 * foot_length_cm + 2.0",
+      "residual_sigma_cm": 0.5,
+      "units": {"shoe_size": "EU", "foot_length": "cm"}
+    },
+    "source": "footwear sizing charts (Mondopoint / EU system)",
+    "confidence": "medium (manufacturer-dependent)"
+  },
+  {
+    "id": "foot_area_from_foot_length",
+    "domain": "human_body",
+    "keywords": ["foot", "foot area", "foot length", "contact area", "pressure"],
+    "vars_involved": ["foot_area_cm2", "foot_length_cm"],
+    "statement": "Sole contact area for an adult foot, when standing barefoot, is roughly 0.5 · foot_length^2 × aspect_ratio, giving typical values of 140-180 cm^2 for adult feet. Rough rule: foot_area_cm2 ≈ 0.3 × foot_length_cm^2 (moderate-precision anthropometric estimate).",
+    "formal": {
+      "relation": "foot_area_cm2 = 0.3 * foot_length_cm**2",
+      "residual_sigma_frac": 0.15,
+      "units": {"foot_area": "cm^2", "foot_length": "cm"}
+    },
+    "source": "anthropometric tables (average adult sole print area)",
+    "confidence": "medium"
+  },
+  {
+    "id": "pressure_force_over_area",
+    "domain": "classical_mechanics",
+    "keywords": ["pressure", "force", "area", "weight", "mechanics"],
+    "vars_involved": ["pressure_pa", "force_n", "area_m2"],
+    "statement": "Pressure = Force / Area. For a person standing evenly on both feet: pressure_pa = (weight_kg · 9.81) / foot_area_total_m^2. Typical adult standing pressure ~20-30 kPa per foot; walking ~2x (one foot contact).",
+    "formal": {
+      "relation": "pressure_pa = force_n / area_m2",
+      "gravitational_constant_earth": 9.81,
+      "units": {"pressure": "Pa", "force": "N", "area": "m^2"}
+    },
+    "source": "Newtonian mechanics (exact)",
+    "confidence": "exact"
+  },
+  {
+    "id": "footprint_depth_from_pressure",
+    "domain": "soil_mechanics",
+    "keywords": ["footprint", "depth", "pressure", "soil", "sand", "indentation"],
+    "vars_involved": ["footprint_depth_cm", "pressure_pa", "soil_stiffness"],
+    "statement": "Footprint indentation depth in soft ground scales inversely with soil stiffness and linearly with applied pressure (in the linear-elastic / Winkler regime): footprint_depth_cm ≈ pressure_pa / soil_stiffness_pa_per_cm. Typical wet sand stiffness ~1e5 Pa/cm (varies 2-3x with moisture).",
+    "formal": {
+      "relation": "footprint_depth_cm = pressure_pa / soil_stiffness_pa_per_cm",
+      "parameters": {
+        "soil_stiffness_mu": 1.0e5,
+        "soil_stiffness_sigma": 3.0e4,
+        "units_stiffness": "Pa/cm"
+      }
+    },
+    "source": "Winkler foundation model; approximate for deformable substrates",
+    "confidence": "low-medium (highly soil-dependent)",
+    "cross_domain_isomorph": "Same linear-response structure as Ohm's law (V = I·R), spring deformation (F = k·x), or viscous flow — input ÷ stiffness = response."
+  }
+]
