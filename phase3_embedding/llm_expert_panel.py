@@ -37,15 +37,20 @@ from typing import Callable
 
 import numpy as np
 
-GPT_KEY = "sk-w4kL9fnlcUWqMvo97OcTjKTiU6waq2EDWIXWl8KdE3fILFyf"
-GEMINI_KEY = "sk-sWaEbAnYG0z8e9oQJaWZmXDiZOIoyrM2bxm7ZR2AxfsYjG2A"
-API_URL = "https://ruoli.dev/v1/chat/completions"
+from _meis_keys import GPT_KEY
+from _meis_keys import GEMINI_KEY
+from _meis_keys import RUOLI_BASE_URL
+API_URL = f"{RUOLI_BASE_URL}/chat/completions"
 
 RATERS = [
-    {"name": "gpt-5.5",              "model": "gpt-5.5",                "api_key": GPT_KEY,    "family": "openai"},
-    {"name": "gpt-5.4-mini",         "model": "gpt-5.4-mini",           "api_key": GPT_KEY,    "family": "openai"},
-    {"name": "gemini-3.1-pro",       "model": "gemini-3.1-pro-preview", "api_key": GEMINI_KEY, "family": "google"},
-    {"name": "gemini-3-flash",       "model": "gemini-3-flash",         "api_key": GEMINI_KEY, "family": "google"},
+    {"name": "gpt-5.5",              "model": "gpt-5.5",                  "api_key": GPT_KEY,    "family": "openai"},
+    {"name": "gpt-5.4",              "model": "gpt-5.4",                  "api_key": GPT_KEY,    "family": "openai"},
+    {"name": "gpt-5.4-mini",         "model": "gpt-5.4-mini",             "api_key": GPT_KEY,    "family": "openai"},
+    {"name": "gpt-5.2",              "model": "gpt-5.2",                  "api_key": GPT_KEY,    "family": "openai"},
+    {"name": "gemini-3.1-pro",       "model": "gemini-3.1-pro-preview",   "api_key": GEMINI_KEY, "family": "google"},
+    {"name": "gemini-3-flash",       "model": "gemini-3-flash",           "api_key": GEMINI_KEY, "family": "google"},
+    {"name": "gemini-3-flash-prev",  "model": "gemini-3-flash-preview",   "api_key": GEMINI_KEY, "family": "google"},
+    {"name": "gemini-3.1-flash-lite","model": "gemini-3.1-flash-lite",    "api_key": GEMINI_KEY, "family": "google"},
 ]
 
 

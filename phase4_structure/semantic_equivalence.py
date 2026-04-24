@@ -467,6 +467,190 @@ def mc_kernel_kl_gaussian(domain_a: str,
 
 
 # ---------------------------------------------------------------------------
+# Extended garbling search: cubic spline + neural
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SplineGarblingResult:
+    domain_a: str
+    domain_b: str
+    n_samples: int
+    n_knots: int
+    residual_rmse: float
+    mu_b_scale: float
+    relative_residual: float
+    dominates: bool
+    tolerance: float
+
+
+def cubic_spline_garbling_fit(mu_a: np.ndarray, mu_b: np.ndarray,
+                                n_knots: int = 8):
+    """Fit μ_b ≈ natural cubic spline of μ_a with n_knots interior knots.
+
+    Uses scipy's interpolate if available, else a plain B-spline basis.
+    Returns (coefficients, residual_rmse, mu_b_scale, relative_residual).
+    """
+    from scipy.interpolate import BSpline
+    # Knots placed at quantiles of mu_a for stability
+    qs = np.linspace(0.05, 0.95, n_knots)
+    knots = np.quantile(mu_a, qs)
+    # Build B-spline basis: degree 3 cubic
+    degree = 3
+    t_knots = np.concatenate([[mu_a.min()] * (degree + 1),
+                               knots,
+                               [mu_a.max()] * (degree + 1)])
+    n_basis = len(t_knots) - degree - 1
+    # Evaluate basis at each mu_a point
+    X = np.zeros((len(mu_a), n_basis))
+    for i in range(n_basis):
+        c = np.zeros(n_basis)
+        c[i] = 1.0
+        spline = BSpline(t_knots, c, degree, extrapolate=False)
+        vals = spline(mu_a)
+        X[:, i] = np.nan_to_num(vals, nan=0.0)
+    coef, *_ = np.linalg.lstsq(X, mu_b, rcond=None)
+    pred = X @ coef
+    resid = mu_b - pred
+    rmse = float(np.sqrt(np.mean(resid ** 2)))
+    mu_b_scale = float(np.sqrt(np.mean(mu_b ** 2)))
+    return coef, rmse, mu_b_scale, rmse / max(mu_b_scale, 1e-12)
+
+
+def cubic_spline_garbling_check(domain_a: str, domain_b: str,
+                                 n_knots: int = 8,
+                                 n_samples: int = 500,
+                                 seed: int = 0,
+                                 tolerance: float = 1e-6,
+                                 ) -> SplineGarblingResult:
+    """BSS existence-of-garbling check using cubic spline basis.
+
+    Strictly more expressive than polynomial degree-3. If the spline
+    basis cannot fit μ_b from μ_a either, that's strong evidence no
+    fixed scalar garbling works.
+    """
+    rng = np.random.default_rng(seed)
+    cls_a, cls_b = CLASS_OF[domain_a], CLASS_OF[domain_b]
+    params_a = class_param_names(cls_a)
+    params_b = class_param_names(cls_b)
+
+    mu_a_all, mu_b_all = [], []
+    for _ in range(n_samples):
+        dim_max = max(len(params_a), len(params_b))
+        theta_full = rng.lognormal(mean=0.0, sigma=0.5, size=dim_max)
+        theta_a = tuple(theta_full[: len(params_a)])
+        theta_b = tuple(theta_full[: len(params_b)])
+        t = rng.uniform(0.0, 10.0, size=16)
+        mu_a_all.append(class_mu(cls_a)(theta_a, t))
+        mu_b_all.append(class_mu(cls_b)(theta_b, t))
+    mu_a = np.concatenate(mu_a_all)
+    mu_b = np.concatenate(mu_b_all)
+    coef, rmse, scale, rel = cubic_spline_garbling_fit(mu_a, mu_b, n_knots=n_knots)
+    return SplineGarblingResult(
+        domain_a=domain_a, domain_b=domain_b,
+        n_samples=n_samples, n_knots=n_knots,
+        residual_rmse=rmse, mu_b_scale=scale,
+        relative_residual=rel,
+        dominates=(rel < tolerance),
+        tolerance=tolerance,
+    )
+
+
+@dataclass
+class NeuralGarblingResult:
+    domain_a: str
+    domain_b: str
+    n_samples: int
+    hidden: int
+    epochs: int
+    residual_rmse: float
+    mu_b_scale: float
+    relative_residual: float
+    dominates: bool
+    tolerance: float
+
+
+def neural_garbling_check(domain_a: str, domain_b: str,
+                           hidden: int = 32, epochs: int = 1000,
+                           n_samples: int = 500,
+                           lr: float = 1e-2, seed: int = 0,
+                           tolerance: float = 1e-6,
+                           ) -> NeuralGarblingResult:
+    """Fit μ_b ≈ MLP(μ_a) with 1 hidden layer (tanh), trained via
+    jax + gradient descent. Most expressive scalar garbling family
+    we ship. If this fails to find a fixed mapping within tolerance,
+    no polynomial or bounded-width MLP does either.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    rng = np.random.default_rng(seed)
+    cls_a, cls_b = CLASS_OF[domain_a], CLASS_OF[domain_b]
+    params_a = class_param_names(cls_a)
+    params_b = class_param_names(cls_b)
+
+    mu_a_all, mu_b_all = [], []
+    for _ in range(n_samples):
+        dim_max = max(len(params_a), len(params_b))
+        theta_full = rng.lognormal(mean=0.0, sigma=0.5, size=dim_max)
+        theta_a = tuple(theta_full[: len(params_a)])
+        theta_b = tuple(theta_full[: len(params_b)])
+        t = rng.uniform(0.0, 10.0, size=16)
+        mu_a_all.append(class_mu(cls_a)(theta_a, t))
+        mu_b_all.append(class_mu(cls_b)(theta_b, t))
+    mu_a = jnp.asarray(np.concatenate(mu_a_all))
+    mu_b = jnp.asarray(np.concatenate(mu_b_all))
+
+    key = jax.random.PRNGKey(seed)
+    k1, k2, k3 = jax.random.split(key, 3)
+    W1 = 0.3 * jax.random.normal(k1, (1, hidden))
+    b1 = jnp.zeros(hidden)
+    W2 = 0.3 * jax.random.normal(k2, (hidden, 1))
+    b2 = jnp.zeros(1)
+
+    def forward(params, x):
+        W1, b1, W2, b2 = params
+        h = jnp.tanh(x[:, None] @ W1 + b1)
+        y = (h @ W2 + b2).squeeze(-1)
+        return y
+
+    def loss_fn(params):
+        pred = forward(params, mu_a)
+        return jnp.mean((pred - mu_b) ** 2)
+
+    grad_fn = jax.grad(loss_fn)
+    params = (W1, b1, W2, b2)
+    m = tuple(jnp.zeros_like(p) for p in params)
+    v = tuple(jnp.zeros_like(p) for p in params)
+    b1_decay, b2_decay, eps = 0.9, 0.999, 1e-8
+    for step in range(1, epochs + 1):
+        grads = grad_fn(params)
+        new_params, new_m, new_v = [], [], []
+        for p, g, mp, vp in zip(params, grads, m, v):
+            mp = b1_decay * mp + (1 - b1_decay) * g
+            vp = b2_decay * vp + (1 - b2_decay) * (g ** 2)
+            mh = mp / (1 - b1_decay ** step)
+            vh = vp / (1 - b2_decay ** step)
+            new_params.append(p - lr * mh / (jnp.sqrt(vh) + eps))
+            new_m.append(mp)
+            new_v.append(vp)
+        params, m, v = tuple(new_params), tuple(new_m), tuple(new_v)
+
+    pred = np.array(forward(params, mu_a))
+    resid = np.array(mu_b) - pred
+    rmse = float(np.sqrt(np.mean(resid ** 2)))
+    mu_b_scale = float(np.sqrt(np.mean(np.array(mu_b) ** 2)))
+    return NeuralGarblingResult(
+        domain_a=domain_a, domain_b=domain_b,
+        n_samples=n_samples, hidden=hidden, epochs=epochs,
+        residual_rmse=rmse, mu_b_scale=mu_b_scale,
+        relative_residual=rmse / max(mu_b_scale, 1e-12),
+        dominates=(rmse / max(mu_b_scale, 1e-12) < tolerance),
+        tolerance=tolerance,
+    )
+
+
+# ---------------------------------------------------------------------------
 # P4.12 — General Monte Carlo kernel KL (arbitrary distribution)
 # ---------------------------------------------------------------------------
 

@@ -20,8 +20,9 @@ import urllib.request
 import urllib.error
 
 
-API_KEY = "sk-w4kL9fnlcUWqMvo97OcTjKTiU6waq2EDWIXWl8KdE3fILFyf"
-API_URL = "https://ruoli.dev/v1/images/generations"
+from _meis_keys import GPT_KEY as API_KEY
+from _meis_keys import RUOLI_BASE_URL
+API_URL = f"{RUOLI_BASE_URL}/images/generations"
 OUT_DIR = Path(__file__).parent / "figs"
 MODEL = "gpt-image-2"
 

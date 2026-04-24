@@ -1,0 +1,120 @@
+{
+  "H1_taller_alice": {
+    "new_latents": [],
+    "new_evidence": [
+      {
+        "node": "height_A",
+        "observation_value": 175,
+        "sigma": 1,
+        "rationale": "Alice being 5 centimetres taller than the reported 170 cm directly implies her actual height is about 175 cm."
+      }
+    ],
+    "explanation": "The hypothesis refers directly to Alice's existing height latent, height_A. Since the reported baseline is 170 cm, being actually 5 cm taller corresponds to height_A = 175 cm. No new latent variables are needed because this concept is already represented in the network.",
+    "raw": "{\n  \"new_latents\": [],\n  \"new_evidence\": [\n    {\n      \"node\": \"height_A\",\n      \"observation_value\": 175,\n      \"sigma\": 1,\n      \"rationale\": \"Alice being 5 centimetres taller than the reported 170 cm directly implies her actual height is about 175 cm.\"\n    }\n  ],\n  \"explanation\": \"The hypothesis refers directly to Alice's existing height latent, height_A. Since the reported baseline is 170 cm, being actually 5 cm taller corresponds to height_A = 175 cm. No new latent variables are needed because this concept is already represented in the network.\"\n}"
+  },
+  "H2_denser_alice": {
+    "new_latents": [],
+    "new_evidence": [
+      {
+        "node": "theta_A",
+        "observation_value": 1060.5,
+        "sigma": 5,
+        "rationale": "The hypothesis states that Alice's body density is 5 percent higher than the population average; the existing prior mean for body density is 1010 kg/m^3, so 1.05 * 1010 = 1060.5 kg/m^3."
+      }
+    ],
+    "explanation": "The hypothesis directly concerns Alice's existing body-density latent theta_A, so no new latent variable is needed. Since the population-average density in the base network is represented by the prior mean 1010 kg/m^3, a 5 percent increase corresponds to 1060.5 kg/m^3. The JSON therefore adds soft evidence on theta_A centered at 1060.5, which will increase Alice's inferred weight because weight_A is deterministically computed from theta_A and height_A.",
+    "raw": "{\n  \"new_latents\": [],\n  \"new_evidence\": [\n    {\n      \"node\": \"theta_A\",\n      \"observation_value\": 1060.5,\n      \"sigma\": 5,\n      \"rationale\": \"The hypothesis states that Alice's body density is 5 percent higher than the population average; the existing prior mean for body density is 1010 kg/m^3, so 1.05 * 1010 = 1060.5 kg/m^3.\"\n    }\n  ],\n  \"explanation\": \"The hypothesis directly concerns Alice's existing body-density latent theta_A, so no new latent variable is needed. Since the population-average density in the base network is represented by the prior mean 1010 kg/m^3, a 5 percent increase corresponds to 1060.5 kg/m^3. The JSON therefore adds soft evidence on theta_A centered at 1060.5, which will increase Alice's inferred weight because weight_A is deterministically computed from theta_A and height_A.\"\n}"
+  },
+  "H3_zodiac": {
+    "new_latents": [
+      {
+        "name": "zodiac_A",
+        "family": "Categorical",
+        "params": {
+          "categories": [
+            "Rat",
+            "Ox",
+            "Tiger",
+            "Rabbit",
+            "Dragon",
+            "Snake",
+            "Horse",
+            "Goat",
+            "Monkey",
+            "Rooster",
+            "Dog",
+            "Pig"
+          ],
+          "probs": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "parents": [],
+        "rationale": "Alice's Chinese zodiac sign is introduced by the hypothesis, but it has no causal pathway to the existing height, density, shoe size, soil stiffness, pressure, or weight variables."
+      },
+      {
+        "name": "zodiac_C",
+        "family": "Categorical",
+        "params": {
+          "categories": [
+            "Rat",
+            "Ox",
+            "Tiger",
+            "Rabbit",
+            "Dragon",
+            "Snake",
+            "Horse",
+            "Goat",
+            "Monkey",
+            "Rooster",
+            "Dog",
+            "Pig"
+          ],
+          "probs": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "parents": [],
+        "rationale": "Charlie\u2019s Chinese zodiac sign is introduced by the hypothesis, but it has no causal pathway to the existing height, density, shoe size, soil stiffness, pressure, or weight variables."
+      }
+    ],
+    "new_evidence": [],
+    "explanation": "The hypothesis concerns Alice's and Charlie's Chinese zodiac birth years, which are not represented in the original physical belief network and have no causal relationship to the target latent weight_A or to the existing observations. Therefore the edit adds orphan categorical zodiac latents for Alice and Charlie with no parents and no evidence connected to existing network variables.",
+    "raw": "{\n  \"new_latents\": [\n    {\n      \"name\": \"zodiac_A\",\n      \"family\": \"Categorical\",\n      \"params\": {\n        \"categories\": [\n          \"Rat\",\n          \"Ox\",\n          \"Tiger\",\n          \"Rabbit\",\n          \"Dragon\",\n          \"Snake\",\n          \"Horse\",\n          \"Goat\",\n          \"Monkey\",\n          \"Rooster\",\n          \"Dog\",\n          \"Pig\"\n        ],\n        \"probs\": [\n          0,\n          0,\n          1,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0\n        ]\n      },\n      \"parents\": [],\n      \"rationale\": \"Alice's Chinese zodiac sign is introduced by the hypothesis, but it has no causal pathway to the existing height, density, shoe size, soil stiffness, pressure, or weight variables.\"\n    },\n    {\n      \"name\": \"zodiac_C\",\n      \"family\": \"Categorical\",\n      \"params\": {\n        \"categories\": [\n          \"Rat\",\n          \"Ox\",\n          \"Tiger\",\n          \"Rabbit\",\n          \"Dragon\",\n          \"Snake\",\n          \"Horse\",\n          \"Goat\",\n          \"Monkey\",\n          \"Rooster\",\n          \"Dog\",\n          \"Pig\"\n        ],\n        \"probs\": [\n          1,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0,\n          0\n        ]\n      },\n      \"parents\": [],\n      \"rationale\": \"Charlie\u2019s Chinese zodiac sign is introduced by the hypothesis, but it has no causal pathway to the existing height, density, shoe size, soil stiffness, pressure, or weight variables.\"\n    }\n  ],\n  \"new_evidence\": [],\n  \"explanation\": \"The hypothesis concerns Alice's and Charlie's Chinese zodiac birth years, which are not represented in the original physical belief network and have no causal relationship to the target latent weight_A or to the existing observations. Therefore the edit adds orphan categorical zodiac latents for Alice and Charlie with no parents and no evidence connected to existing network variables.\"\n}"
+  },
+  "H4_contradiction": {
+    "new_latents": [],
+    "new_evidence": [
+      {
+        "node": "height_A",
+        "observation_value": 145,
+        "sigma": 3,
+        "rationale": "If Charlie's height remains near its existing prior center of about 175 cm, then Alice being around 30 cm shorter implies Alice's height is about 145 cm. This directly pulls the existing height_A latent toward the hypothesis, despite contradicting the existing Alice-height observation."
+      }
+    ],
+    "explanation": "The hypothesis concerns Alice's height relative to Charlie, which is already represented by the existing height_A and height_C latents, so no new latent variables are needed. Because the provided schema has no explicit deterministic node for height_A - height_C, the relative claim is encoded as a soft observation on height_A: with Charlie centered near 175 cm, Alice being around 30 cm shorter corresponds to height_A \u2248 145 cm. A small observation noise reflects that the phrase 'around 30 cm shorter' is approximate but still a strong constraint.",
+    "raw": "{\n  \"new_latents\": [],\n  \"new_evidence\": [\n    {\n      \"node\": \"height_A\",\n      \"observation_value\": 145,\n      \"sigma\": 3,\n      \"rationale\": \"If Charlie's height remains near its existing prior center of about 175 cm, then Alice being around 30 cm shorter implies Alice's height is about 145 cm. This directly pulls the existing height_A latent toward the hypothesis, despite contradicting the existing Alice-height observation.\"\n    }\n  ],\n  \"explanation\": \"The hypothesis concerns Alice's height relative to Charlie, which is already represented by the existing height_A and height_C latents, so no new latent variables are needed. Because the provided schema has no explicit deterministic node for height_A - height_C, the relative claim is encoded as a soft observation on height_A: with Charlie centered near 175 cm, Alice being around 30 cm shorter corresponds to height_A \u2248 145 cm. A small observation noise reflects that the phrase 'around 30 cm shorter' is approximate but still a strong constraint.\"\n}"
+  }
+}

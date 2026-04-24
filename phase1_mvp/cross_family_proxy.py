@@ -34,9 +34,10 @@ import urllib.error
 from dataclasses import dataclass
 from pathlib import Path
 
-GPT_KEY = "sk-w4kL9fnlcUWqMvo97OcTjKTiU6waq2EDWIXWl8KdE3fILFyf"
-GEMINI_KEY = "sk-sWaEbAnYG0z8e9oQJaWZmXDiZOIoyrM2bxm7ZR2AxfsYjG2A"
-API_URL = "https://ruoli.dev/v1/chat/completions"
+from _meis_keys import GPT_KEY
+from _meis_keys import GEMINI_KEY
+from _meis_keys import RUOLI_BASE_URL
+API_URL = f"{RUOLI_BASE_URL}/chat/completions"
 
 
 MODELS = [
