@@ -66,6 +66,9 @@ ENV_REGISTRY = {
 SANITY_RANGES = {
     "alice_charlie": (30.0, 120.0),   # adult weight in kg
     "dugongs":       (0.0,   3.0),    # sea cow length in meters
+    "peregrines":    (0.0, 5000.0),   # integer bird count; very wide to only
+                                      # catch decimal-glitches (158 instead
+                                      # of 1.58 style) without false retries
 }
 
 # Per-env prompts to elicit a STRUCTURED model distillation from the scientist.
@@ -100,6 +103,20 @@ STRUCTURED_DISTILL_PROMPTS = {
         '{"formula": "alpha - beta * (gamma ** age)", '
         '"parameters": {"alpha": 2.0, "beta": 1.5, "gamma": 0.4}, '
         '"explanation": "length saturates toward alpha from below"}'
+    ),
+    "peregrines": (
+        "Now distill your understanding of the system into strict JSON. "
+        "Reply with ONLY a single JSON object (no prose, no markdown fences) "
+        "with these exact keys:\n"
+        "{\n"
+        '  "formula": "<a Python expression using variable name `t`, returning an integer count (non-negative)>",\n'
+        '  "parameters": {"name": value, ...},\n'
+        '  "explanation": "<one sentence of context>"\n'
+        "}\n"
+        "Use math.exp, **, abs, round as needed. Example: "
+        '{"formula": "round(max(0.0, math.exp(alpha + beta1*t + beta2*t**2 + beta3*t**3)))", '
+        '"parameters": {"alpha": 4.5, "beta1": 1.2, "beta2": 0.07, "beta3": -0.24}, '
+        '"explanation": "log-rate is a cubic in time; populations rise then crash"}'
     ),
 }
 
