@@ -1,0 +1,49 @@
+[
+  {
+    "id": "poisson_log_polynomial",
+    "domain": "count_regression",
+    "keywords": ["poisson", "count", "log", "rate", "polynomial", "regression", "exp", "lambda"],
+    "vars_involved": ["count", "time", "lambda", "log_rate"],
+    "statement": "When an outcome is a non-negative integer count (births per year, animals sighted, events in an interval), a standard model is Poisson regression: Y ~ Poisson(lambda), with log(lambda) = linear or polynomial in the covariates. For a single time covariate t, log(lambda) = alpha + beta1*t + beta2*t^2 + beta3*t^3 accommodates rising-then-falling or multi-phase trajectories. The Poisson mean equals its variance, so larger counts are automatically noisier in absolute terms.",
+    "formal": {
+      "likelihood": "Y ~ Poisson(lambda)",
+      "link": "log(lambda) = alpha + beta1*t + beta2*t**2 + beta3*t**3",
+      "parameters_hint": {
+        "alpha": "baseline log-rate",
+        "beta1": "linear trend",
+        "beta2": "curvature",
+        "beta3": "S-shape / double-bend"
+      },
+      "inverse_link": "lambda = exp(log_lambda)"
+    },
+    "source": "standard GLM for count data; used widely in ecological monitoring",
+    "confidence": "high"
+  },
+  {
+    "id": "boom_bust_population_trajectory",
+    "domain": "population_dynamics",
+    "keywords": ["boom", "bust", "rise", "fall", "crash", "recovery", "population", "trajectory"],
+    "vars_involved": ["population", "time"],
+    "statement": "Wildlife population time-series often show a characteristic boom-and-bust shape: initial rise, peak near a specific time, then decline to near-zero. Causes include habitat saturation plus a late stressor (disease, pesticide, habitat loss). For peregrine falcons specifically, organochlorine pesticides (DDT) caused a sharp mid-20th-century crash after an earlier rising baseline. Time-series can span 3-6 orders of magnitude from peak to trough, so log-scale modelling of rate parameters is appropriate.",
+    "formal": {
+      "shape": "unimodal with rising then falling rate; tail can be near-zero",
+      "peak_timing_hint": "typically first third of the observation window"
+    },
+    "source": "wildlife-conservation time-series literature; Marchant et al. (2010) peregrine trends",
+    "confidence": "medium (species-specific)"
+  },
+  {
+    "id": "multiphase_nonlinear_trend",
+    "domain": "dynamics",
+    "keywords": ["nonlinear", "trend", "multiphase", "polynomial", "smooth", "cubic"],
+    "vars_involved": ["y", "t"],
+    "statement": "When the response's trajectory has at least one turning point (rise then fall, or vice versa), a low-order polynomial (quadratic or cubic) in the independent variable is often the simplest adequate fit. Cubic polynomials admit up to two turning points — useful when the data shows both an initial rise AND a subsequent dip or tail. Overfitting is controlled by putting priors on the coefficients (smaller coefficients = smoother trajectory).",
+    "formal": {
+      "model": "y = c0 + c1*t + c2*t**2 + c3*t**3",
+      "degrees_of_freedom": "4 (for cubic)",
+      "turning_points": "up to 2 for cubic"
+    },
+    "source": "standard polynomial regression / basis-function approximation",
+    "confidence": "high"
+  }
+]

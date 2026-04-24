@@ -26,6 +26,7 @@ DEFAULT_FILES = [
     "human_body.json",
     "growth_curves.json",
     "dynamics_multivariate.json",
+    "count_regression.json",
 ]
 
 

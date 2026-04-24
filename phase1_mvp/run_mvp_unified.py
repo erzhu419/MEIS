@@ -31,6 +31,7 @@ except ImportError:
 from boxing_gym.agents.agent import LMExperimenter
 from boxing_gym.envs.dugongs import Dugongs, DirectGoalNaive as DugongsDirectGoalNaive
 from boxing_gym.envs.lotka_volterra import LotkaVolterra, DirectGoalNaive as LotkaVolterraDirectGoalNaive
+from boxing_gym.envs.peregrines import Peregrines, DirectGoalNaive as PeregrinesDirectGoalNaive
 
 from phase1_mvp.envs.alice_charlie import AliceCharlie, DirectGoalNaive as AliceCharlieDirectGoalNaive
 from phase1_mvp.agents.prior_injecting_experimenter import (
@@ -48,12 +49,14 @@ PRIOR_QUERIES = {
     "alice_charlie":   "predict weight given height",
     "dugongs":         "predict length given age",
     "lotka_volterra":  "predict predator prey population oscillation time ODE",
+    "peregrines":      "predict count time poisson polynomial trajectory rise fall",
 }
 
 ENV_REGISTRY = {
     "alice_charlie":  (AliceCharlie,   AliceCharlieDirectGoalNaive),
     "dugongs":        (Dugongs,        DugongsDirectGoalNaive),
     "lotka_volterra": (LotkaVolterra,  LotkaVolterraDirectGoalNaive),
+    "peregrines":     (Peregrines,     PeregrinesDirectGoalNaive),
 }
 
 # Plausible output ranges per env. Predictions outside this range trigger

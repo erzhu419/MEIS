@@ -72,6 +72,24 @@ FORM_PATTERNS = {
             r"α\s*-\s*β",
         ],
     },
+    "peregrines": {
+        "rise_and_fall": [
+            r"\brise\b", r"\bfall\b", r"\bpeak\b", r"\bdecline\b",
+            r"\brecover", r"\bcrash", r"\bbust\b", r"\bboom\b",
+            r"turning\s+point", r"goes?\s+up.*down", r"rises?\s+then\s+falls?",
+        ],
+        "polynomial_form": [
+            r"\bpolynomial", r"\bquadratic", r"\bcubic",
+            r"t\s*\^\s*2", r"t\s*\^\s*3",
+            r"t\*\*2", r"t\*\*3",
+            r"nonlinear\s+trend", r"\bcurvat",
+        ],
+        "count_or_poisson": [
+            r"\bpoisson\b", r"count\s+data", r"rate\s+parameter",
+            r"\blog[\s-]*rate\b", r"\blog[\s-]*lambda\b", r"\blambda\b",
+            r"exp\(\s*\w", r"GLM",
+        ],
+    },
     "lotka_volterra": {
         "predator_prey_concept": [
             r"predator",
