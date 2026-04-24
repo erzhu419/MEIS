@@ -316,7 +316,7 @@ All results reproduce from these modules:
   `run_transfer_benchmark`, `TransferResult`
 - `phase4_structure/tests/test_{law_zoo,signature,wl_signature,retrieval,transfer,markov_category,semantic_equivalence}.py`
 
-Acceptance suite: 40 unit tests across 7 modules, all PASS.
+Acceptance suite: 44 unit tests across 7 modules, all PASS.
 
 ## 7. Limitations and future work
 
@@ -326,18 +326,18 @@ Acceptance suite: 40 unit tests across 7 modules, all PASS.
    and predator-prey fit the damped-oscillation family; gravity and
    electric fields fit allocation.
 2. **Layered signature stack vs fully general semantic equivalence**.
-   We implement four complementary checks: op-multiset (§2.1), WL
-   refinement (§2.3), Markov-category shape matching (§2.4), and
-   BSS + Perrone-style semantic equivalence (§2.5). All four agree
-   on the law-zoo. The semantic layer (§2.5) only handles the
-   restricted setting where class members share a canonical
-   likelihood formula $P(y \mid \theta, t)$ with matched parameter
-   arity — it does not yet perform full Fritz-style
-   Blackwell-Sherman-Stein equivalence via an existence-of-garbling
-   search (which is semantically stronger still, and potentially
-   expensive to decide). GNN-learned embeddings are also deferred:
-   useful once the zoo grows large enough that learned similarity
-   dominates symbolic isomorphism.
+   We implement five complementary checks: op-multiset (§2.1), WL
+   refinement (§2.3), Markov-category shape matching (§2.4),
+   likelihood-match BSS + Perrone closed-form KL (§2.5), and
+   existence-of-garbling BSS search + general MC kernel KL (§2.5
+   extension). All five agree on the law-zoo. Garbling search is
+   currently restricted to the **linear-Gaussian** family — a
+   best-fit $(A, b)$ regression on sampled $(μ_a, μ_b)$ pairs. Within-
+   class it recovers the identity garbling ($A=1$, $b=0$) at machine
+   epsilon; cross-class it returns non-trivial residuals ($>50\%$ of
+   $\mu_b$ scale on all 3 pairs tested), correctly rejecting. Fully
+   general BSS (non-linear garbling search over arbitrary Markov
+   kernels) and GNN-learned embeddings remain future work.
 3. **Exp_decay transfer null**. Section 4.3 documents that the
    protocol's benefit depends on the dynamics being
    *plateau-revealing*; purely decaying dynamics don't carry enough

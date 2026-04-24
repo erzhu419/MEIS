@@ -213,8 +213,175 @@ def perrone_kernel_kl(domain_a: str,
     )
 
 
+# ---------------------------------------------------------------------------
+# P4.9a — Fritz BSS existence-of-garbling check (linear-Gaussian restriction)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class GarblingResult:
+    domain_a: str               # source kernel K_a : Θ → Y_a
+    domain_b: str               # target kernel K_b : Θ → Y_b
+    n_samples: int
+    A: float                    # best-fit scale of the linear garbling G(y) = A·y + b
+    b: float                    # best-fit offset
+    residual_rmse: float        # RMSE of (A·μ_a + b) vs μ_b over sampled (θ, t)
+    mu_b_scale: float           # RMS magnitude of μ_b (to gauge relative residual)
+    relative_residual: float    # residual_rmse / mu_b_scale
+    dominates: bool             # True if residual is tiny (K_a BSS-dominates K_b
+                                # under linear-Gaussian garbling)
+    tolerance: float
+
+
+def linear_gaussian_bss_check(domain_a: str,
+                              domain_b: str,
+                              n_samples: int = 500,
+                              seed: int = 0,
+                              tolerance: float = 1e-6,
+                              ) -> GarblingResult:
+    """Search for a linear-Gaussian garbling G : Y_a ⇝ Y_b such that
+    K_b = G ∘ K_a.
+
+    For Gaussian kernels K_a = Normal(μ_a(θ,t), σ_a²) and G(y_a) =
+    A·y_a + b + Normal(0, σ_G²), the composition is
+    Normal(A·μ_a(θ,t) + b, A²σ_a² + σ_G²). BSS-dominance reduces to
+    the MEAN condition
+
+        ∀ θ, t:   A·μ_a(θ, t) + b = μ_b(θ, t)
+
+    (plus a scalar variance feasibility condition A²σ_a² ≤ σ_b²,
+    automatically satisfiable by picking σ_G).
+
+    We solve the mean condition as ordinary least squares on a random
+    (θ, t) sample; the residual RMSE tells us whether ANY linear-
+    Gaussian garbling exists. Small residual ⇒ K_a linear-Gaussian-
+    BSS-dominates K_b. Large residual ⇒ no linear garbling works (a
+    nonlinear one might still; see §7).
+
+    This is semantically stronger than `bss_likelihood_equivalent`:
+    the latter requires the two likelihoods to MATCH EXACTLY at shared
+    θ; this one asks whether K_b can be CONSTRUCTED from K_a via
+    post-processing — a genuine Fritz-style BSS question.
+    """
+    rng = np.random.default_rng(seed)
+    cls_a, cls_b = CLASS_OF[domain_a], CLASS_OF[domain_b]
+    params_a = class_param_names(cls_a)
+    params_b = class_param_names(cls_b)
+
+    mu_a_all = []
+    mu_b_all = []
+    for _ in range(n_samples):
+        dim_max = max(len(params_a), len(params_b))
+        theta_full = rng.lognormal(mean=0.0, sigma=0.5, size=dim_max)
+        theta_a = tuple(theta_full[: len(params_a)])
+        theta_b = tuple(theta_full[: len(params_b)])
+        t = rng.uniform(0.0, 10.0, size=16)
+        mu_a_all.append(class_mu(cls_a)(theta_a, t))
+        mu_b_all.append(class_mu(cls_b)(theta_b, t))
+    mu_a = np.concatenate(mu_a_all)
+    mu_b = np.concatenate(mu_b_all)
+
+    # Least-squares: mu_b ≈ A·mu_a + b
+    X = np.column_stack([mu_a, np.ones_like(mu_a)])
+    coef, *_ = np.linalg.lstsq(X, mu_b, rcond=None)
+    A, b = float(coef[0]), float(coef[1])
+    pred = A * mu_a + b
+    resid = mu_b - pred
+    rmse = float(np.sqrt(np.mean(resid ** 2)))
+    mu_b_scale = float(np.sqrt(np.mean(mu_b ** 2)))
+    relative = rmse / max(mu_b_scale, 1e-12)
+
+    return GarblingResult(
+        domain_a=domain_a, domain_b=domain_b,
+        n_samples=n_samples,
+        A=A, b=b,
+        residual_rmse=rmse,
+        mu_b_scale=mu_b_scale,
+        relative_residual=relative,
+        dominates=(relative < tolerance),
+        tolerance=tolerance,
+    )
+
+
+# ---------------------------------------------------------------------------
+# P4.9b — General Monte Carlo kernel KL (non-Gaussian ready)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class MCKLResult:
+    domain_a: str
+    domain_b: str
+    n_theta_samples: int
+    n_y_per_theta: int
+    sigma: float
+    kl_estimate: float
+    kl_stderr: float
+
+
+def mc_kernel_kl_gaussian(domain_a: str,
+                          domain_b: str,
+                          n_theta_samples: int = 300,
+                          n_y_per_theta: int = 50,
+                          seed: int = 0,
+                          sigma: float = 1.0,
+                          ) -> MCKLResult:
+    """General Monte Carlo estimator of KL(K_a ‖ K_b) for Gaussian-
+    observation kernels, without using the closed-form squared-mean
+    shortcut of `perrone_kernel_kl`.
+
+    Algorithm:
+      1. Sample θ ~ LogNormal reference prior.
+      2. For each θ: sample y_i ~ Normal(μ_a(θ,t), σ²), i = 1..M.
+      3. Estimate inner KL: (1/M) Σ_i [log N(y_i|μ_a, σ²) − log N(y_i|μ_b, σ²)].
+      4. Outer MC: average inner estimate over θ samples.
+
+    On the law-zoo this must agree (up to MC noise) with
+    `perrone_kernel_kl`'s closed-form result — see
+    test_semantic_equivalence.test_mc_kl_matches_closed_form_on_gaussian.
+
+    The estimator is **general**: dropping the Gaussian assumption only
+    requires replacing step 2 (how to sample y given θ) and step 3
+    (how to evaluate log densities). Once a non-Gaussian law-zoo
+    fixture exists (e.g. Poisson counts), the same code applies.
+    """
+    rng = np.random.default_rng(seed)
+    cls_a, cls_b = CLASS_OF[domain_a], CLASS_OF[domain_b]
+    params_a = class_param_names(cls_a)
+    params_b = class_param_names(cls_b)
+
+    per_theta_kl = np.empty(n_theta_samples)
+    for i in range(n_theta_samples):
+        dim_max = max(len(params_a), len(params_b))
+        theta_full = rng.lognormal(mean=0.0, sigma=0.5, size=dim_max)
+        theta_a = tuple(theta_full[: len(params_a)])
+        theta_b = tuple(theta_full[: len(params_b)])
+        t = rng.uniform(0.0, 10.0, size=8)
+        mu_a = class_mu(cls_a)(theta_a, t)
+        mu_b = class_mu(cls_b)(theta_b, t)
+
+        # Sample y from K_a
+        y = mu_a + rng.normal(0.0, sigma, size=(n_y_per_theta,) + mu_a.shape)
+        # Evaluate log-densities under both kernels
+        log_a = gaussian_log_likelihood(y, mu_a, sigma)
+        log_b = gaussian_log_likelihood(y, mu_b, sigma)
+        # Inner MC KL: per-observation KL = mean over (y-samples, t-axis).
+        # This matches perrone_kernel_kl's per-t averaging convention so
+        # the two estimators are directly comparable.
+        per_theta_kl[i] = float(np.mean(log_a - log_b))
+
+    return MCKLResult(
+        domain_a=domain_a, domain_b=domain_b,
+        n_theta_samples=n_theta_samples,
+        n_y_per_theta=n_y_per_theta,
+        sigma=sigma,
+        kl_estimate=float(per_theta_kl.mean()),
+        kl_stderr=float(per_theta_kl.std(ddof=1) / np.sqrt(n_theta_samples)),
+    )
+
+
 if __name__ == "__main__":
-    print("P4.8 semantic equivalence — BSS + Perrone kernel KL\n")
+    print("P4.8 + P4.9 semantic equivalence — BSS + Perrone + garbling + MC KL\n")
     print("=== BSS likelihood equivalence ===")
     pairs = [
         ("rc_circuit", "radioactive_decay"),        # within exp_decay
@@ -230,8 +397,22 @@ if __name__ == "__main__":
         print(f"  {a:<22} vs {b:<22}  max|Δlog p| = {r.max_abs_log_lik_diff:.3e}  "
               f"{verdict}")
 
-    print("\n=== Perrone categorical KL divergence ===")
+    print("\n=== Perrone categorical KL divergence (closed form) ===")
     for a, b in pairs:
         r = perrone_kernel_kl(a, b, n_samples=400, seed=0)
         print(f"  {a:<22} vs {b:<22}  D = {r.kl_estimate:.4e}  "
+              f"(SE {r.kl_stderr:.4e})")
+
+    print("\n=== P4.9a — Fritz linear-Gaussian garbling search ===")
+    for a, b in pairs:
+        r = linear_gaussian_bss_check(a, b, n_samples=300, seed=0)
+        verdict = "✓ dominates" if r.dominates else "✗ no lin-G garbling"
+        print(f"  {a:<22} → {b:<22}  A={r.A:+.3f}  b={r.b:+.3f}  "
+              f"rel_residual={r.relative_residual:.3e}  {verdict}")
+
+    print("\n=== P4.9b — general MC kernel KL (Gaussian case) ===")
+    for a, b in pairs:
+        r = mc_kernel_kl_gaussian(a, b, n_theta_samples=300,
+                                    n_y_per_theta=50, seed=0)
+        print(f"  {a:<22} vs {b:<22}  D_MC = {r.kl_estimate:+.4e}  "
               f"(SE {r.kl_stderr:.4e})")

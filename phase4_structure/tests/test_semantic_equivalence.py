@@ -33,6 +33,7 @@ from phase4_structure.law_zoo import CLASS_OF
 from phase4_structure.semantic_equivalence import (
     bss_likelihood_equivalent, perrone_kernel_kl,
     gaussian_log_likelihood,
+    linear_gaussian_bss_check, mc_kernel_kl_gaussian,
 )
 
 
@@ -129,12 +130,86 @@ def test_gaussian_log_likelihood_closed_form():
     print(f"[PASS] gaussian_log_likelihood matches closed form at 2 points")
 
 
+def test_fritz_garbling_dominates_within_class():
+    """P4.9a: within-class, the best-fit linear-Gaussian garbling is
+    the identity map (A = 1, b = 0) with residual at machine epsilon.
+    This is the genuine 'there exists a post-processor' statement in
+    BSS-dominance terms (not just likelihood equality)."""
+    pairs = _within_class_pairs()
+    for a, b in pairs:
+        r = linear_gaussian_bss_check(a, b, n_samples=300, seed=0, tolerance=1e-10)
+        assert r.dominates, f"{a} → {b}: rel_residual {r.relative_residual}"
+        assert abs(r.A - 1.0) < 1e-10, f"{a} → {b}: A = {r.A} not 1"
+        assert abs(r.b) < 1e-10, f"{a} → {b}: b = {r.b} not 0"
+        assert r.relative_residual < 1e-10, \
+            f"{a} → {b}: rel_residual {r.relative_residual}"
+    print(f"[PASS] Fritz linear-Gaussian garbling within-class: {len(pairs)} pairs, "
+          f"identity garbling (A≈1, b≈0, residual ~1e-16)")
+
+
+def test_fritz_garbling_rejects_cross_class():
+    """P4.9a: cross-class, no linear-Gaussian garbling works. The
+    best-fit (A, b) still has a significant residual (>5% of μ_b
+    scale)."""
+    pairs = _cross_class_pairs()
+    for a, b in pairs:
+        r = linear_gaussian_bss_check(a, b, n_samples=300, seed=0, tolerance=1e-6)
+        assert not r.dominates, \
+            f"{a} → {b} unexpectedly dominates with residual {r.relative_residual}"
+        assert r.relative_residual > 0.05, \
+            f"{a} → {b}: residual too small to reject: {r.relative_residual}"
+    print(f"[PASS] Fritz linear-Gaussian garbling rejects cross-class: "
+          f"{len(pairs)} pairs, all relative residual > 0.05")
+
+
+def test_mc_kernel_kl_within_class_is_zero():
+    """P4.9b: general MC KL = 0 within-class (identical μ functions)."""
+    pairs = _within_class_pairs()
+    for a, b in pairs:
+        r = mc_kernel_kl_gaussian(a, b, n_theta_samples=200,
+                                    n_y_per_theta=30, seed=0)
+        assert r.kl_estimate == 0.0, \
+            f"{a} vs {b}: within-class MC KL should be 0, got {r.kl_estimate}"
+    print(f"[PASS] general MC kernel KL within-class: {len(pairs)} pairs, "
+          f"D_MC = 0 exactly")
+
+
+def test_mc_kernel_kl_matches_closed_form_on_gaussian():
+    """P4.9b validation: the general MC estimator must agree with
+    Perrone's closed-form squared-mean formula on every cross-class
+    Gaussian pair, within 3σ MC error. This certifies the general
+    machinery is correct before we apply it to future non-Gaussian
+    fixtures."""
+    pairs = _cross_class_pairs()
+    for a, b in pairs:
+        r_mc = mc_kernel_kl_gaussian(a, b, n_theta_samples=400,
+                                       n_y_per_theta=60, seed=0)
+        r_closed = perrone_kernel_kl(a, b, n_samples=400, seed=0)
+        # The two estimators use the SAME θ distribution and SAME σ,
+        # so they target the same quantity. MC should be within 3σ
+        # of closed-form (which is itself a closed-form Monte Carlo).
+        diff = abs(r_mc.kl_estimate - r_closed.kl_estimate)
+        combined_se = (r_mc.kl_stderr ** 2 + r_closed.kl_stderr ** 2) ** 0.5
+        assert diff < 3.0 * max(combined_se, 1e-9), \
+            (f"{a} vs {b}: MC {r_mc.kl_estimate:.4f}±{r_mc.kl_stderr:.4f} "
+             f"vs closed {r_closed.kl_estimate:.4f}±{r_closed.kl_stderr:.4f}, "
+             f"diff {diff:.4f} > 3σ {3.0 * combined_se:.4f}")
+    print(f"[PASS] general MC kernel KL agrees with Perrone closed form on "
+          f"{len(pairs)} cross-class pairs (within 3σ — validates non-"
+          f"Gaussian-ready MC machinery)")
+
+
 if __name__ == "__main__":
-    print("=== P4.8 semantic equivalence validation ===\n")
+    print("=== P4.8 + P4.9 semantic equivalence validation ===\n")
     test_gaussian_log_likelihood_closed_form()
     test_bss_within_class_exact_equivalence()
     test_bss_cross_class_is_detectably_inequivalent()
     test_perrone_kl_within_class_is_zero()
     test_perrone_kl_cross_class_is_positive_with_small_se()
     test_perrone_kl_symmetry_in_squared_mean_formulation()
-    print("\nAll P4.8 semantic-equivalence checks passed.")
+    print()
+    test_fritz_garbling_dominates_within_class()
+    test_fritz_garbling_rejects_cross_class()
+    test_mc_kernel_kl_within_class_is_zero()
+    test_mc_kernel_kl_matches_closed_form_on_gaussian()
+    print("\nAll P4.8 + P4.9 semantic-equivalence checks passed.")
