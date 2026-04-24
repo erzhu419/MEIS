@@ -47,56 +47,38 @@ from phase3_embedding.demo_alice_charlie_chain import build_model, _sample
 
 
 # =============================================================================
-# Claim abstraction
+# Legacy shim — the engine (P3.1) is the new home for these abstractions
 # =============================================================================
-@dataclass
-class Claim:
-    name: str
-    summary: str
-    # A function run inside a PyMC model context that adds the claim's
-    # implied observation. If None, the claim is purely structural.
-    apply_evidence: Callable[[], None] | None = None
-    # Count of new graph elements (nodes + edges) the claim requires that
-    # the existing belief network doesn't have. Zero means the claim fits
-    # into existing vocabulary.
-    structural_additions: int = 0
+from phase3_embedding.claim_ranking_engine import (
+    ClaimSpec, ClaimScore, ClaimRankingEngine, pretty_print_engine_scores,
+)
 
-
-@dataclass
-class ClaimScore:
-    claim: Claim
-    kl_drift: float
-    structural_term: float
-    composite: float
+# Backward-compatible alias so existing tests can still import `Claim`.
+Claim = ClaimSpec
 
 
 # =============================================================================
-# KL-drift estimator over posterior samples (reuse P2.2 machinery)
+# Base belief network builder (used by the engine)
 # =============================================================================
+def _build_base_alice_charlie():
+    """Base belief network: weak Alice-taller-than-Bob evidence."""
+    return build_model(alice_taller_than_bob=True,
+                       height_diff_mean=2.0, height_diff_sigma=5.0,
+                       equal_shoes=False, alice_footprint_deeper_by=None)
+
+
+# Legacy tests may still import these helpers
 def _kl_normal_approx(samples_p: np.ndarray, samples_q: np.ndarray) -> float:
-    """Fit a univariate Normal to each sample set, return closed-form KL(p||q)."""
     mu_p, mu_q = float(samples_p.mean()), float(samples_q.mean())
-    var_p = float(samples_p.var(ddof=1))
-    var_q = float(samples_q.var(ddof=1))
-    # Guard against near-degenerate posteriors (e.g., when a claim collapses
-    # the posterior to a near-point).
-    var_p = max(var_p, 1e-20)
-    var_q = max(var_q, 1e-20)
-    return (
-        math.log(math.sqrt(var_q / var_p))
-        + (var_p + (mu_p - mu_q) ** 2) / (2.0 * var_q)
-        - 0.5
-    )
+    var_p = max(float(samples_p.var(ddof=1)), 1e-20)
+    var_q = max(float(samples_q.var(ddof=1)), 1e-20)
+    return (math.log(math.sqrt(var_q / var_p))
+            + (var_p + (mu_p - mu_q) ** 2) / (2.0 * var_q)
+            - 0.5)
 
 
-# =============================================================================
-# Build the base belief network (same as the multi-obs demo's "stage 1")
-# =============================================================================
 def _sample_base(draws: int = 1500, tune: int = 1000, random_seed: int = 0):
-    """Base belief network: weak Alice-taller-than-Bob evidence (no other obs)."""
-    model = build_model(alice_taller_than_bob=True,
-                        height_diff_mean=2.0, height_diff_sigma=5.0,
-                        equal_shoes=False, alice_footprint_deeper_by=None)
+    model = _build_base_alice_charlie()
     return model, _sample(model, draws=draws, tune=tune, random_seed=random_seed)
 
 
@@ -189,19 +171,19 @@ def _build_claims() -> list[Claim]:
         Claim(
             name="H_taller",
             summary="Alice is 5 cm taller than Charlie (fits existing height structure)",
-            apply_evidence=_claim_taller,
+            build_model=_claim_taller,
             structural_additions=0,
         ),
         Claim(
             name="H_denser",
             summary="Alice is ~5% denser than Charlie (uses existing theta node)",
-            apply_evidence=_claim_denser,
+            build_model=_claim_denser,
             structural_additions=0,
         ),
         Claim(
             name="H_larger_feet",
             summary="Alice has larger feet than Charlie (uses existing shoe node)",
-            apply_evidence=_claim_larger_feet,
+            build_model=_claim_larger_feet,
             structural_additions=0,
         ),
         Claim(
@@ -209,7 +191,7 @@ def _build_claims() -> list[Claim]:
             summary=("Alice was born in the Year of the Tiger; Charlie was not "
                      "(requires 2 new orphan Categorical nodes; disconnected "
                      "from weight in the existing belief network)"),
-            apply_evidence=_claim_zodiac,  # real PyMC model; KL will be ~0
+            build_model=_claim_zodiac,  # real PyMC model; KL will be ~0
             structural_additions=2,        # 2 orphan nodes; BIC penalty log(N)/2 · 2
         ),
     ]
@@ -219,59 +201,50 @@ def _build_claims() -> list[Claim]:
 # Ranking
 # =============================================================================
 def rank_claims(
-    claims: list[Claim] | None = None,
+    claims: list[ClaimSpec] | None = None,
     latent_var: str = "weight_A",
     *,
     bic_n: int = 30,
     draws: int = 1500, tune: int = 1000,
     random_seed: int = 0,
     verbose: bool = True,
+    kl_estimator: str = "gaussian_moment",
+    structural_formula: str = "bic",
 ) -> list[ClaimScore]:
-    """Rank claims ascending by D(h) = KL(P(B)||P(B|h)) + lambda·|Δstructure|.
+    """Rank claims ascending by D(h) = KL + lambda · |Δstructure|.
 
-    lambda ≈ log(N)/2 per BIC; with N=30 observations in the belief network,
-    lambda ≈ 1.7. Each additional structural element (new node or edge
-    without data support) thus contributes ~1.7 nats to D(h).
+    Thin wrapper over ClaimRankingEngine — all new work should go through
+    the engine directly. This function exists for backwards compatibility
+    with code written during Phase 2 realignment.
+
+    `kl_estimator` and `structural_formula` are passed through so simple
+    ablations can be done at the demo level too.
     """
     claims = claims or _build_claims()
-    bic_lambda = math.log(max(bic_n, 1)) / 2.0
+    # ClaimSpec uses `build_model`; legacy Claim used `apply_evidence` (same
+    # field on the alias). Map forward if needed.
+    normalized: list[ClaimSpec] = []
+    for c in claims:
+        build_model_fn = getattr(c, "build_model", None) or getattr(c, "apply_evidence", None)
+        normalized.append(ClaimSpec(
+            name=c.name, summary=c.summary,
+            build_model=build_model_fn,
+            structural_additions=c.structural_additions,
+            structural_cost_override=getattr(c, "structural_cost_override", None),
+        ))
 
-    # Base posterior samples for the latent we care about (weight_A here).
-    # We also need weight_C to compute the difference for interpretability.
-    base_model, base_trace = _sample_base(draws=draws, tune=tune,
-                                          random_seed=random_seed)
-    base_samples = np.asarray(base_trace[latent_var])
-
-    scores: list[ClaimScore] = []
-    for claim in claims:
-        if claim.apply_evidence is None:
-            # No model provided: assume the claim cannot be tested against
-            # the belief network numerically. Use a large KL floor only as
-            # a last resort — honest claims below provide their own model.
-            kl = 100.0
-        else:
-            hyp_model = claim.apply_evidence()
-            hyp_trace = _sample(hyp_model, draws=draws, tune=tune,
-                                random_seed=random_seed + 1)
-            hyp_samples = np.asarray(hyp_trace[latent_var])
-            kl = _kl_normal_approx(base_samples, hyp_samples)
-        structural = bic_lambda * claim.structural_additions
-        composite = kl + structural
-        scores.append(ClaimScore(claim=claim, kl_drift=kl,
-                                 structural_term=structural,
-                                 composite=composite))
-
-    scores.sort(key=lambda s: s.composite)
+    engine = ClaimRankingEngine(
+        build_base_model=_build_base_alice_charlie,
+        latent_var=latent_var,
+        bic_n=bic_n,
+        kl_estimator=kl_estimator,
+        structural_formula=structural_formula,
+        draws=draws, tune=tune, random_seed=random_seed,
+    )
+    scores = engine.rank(normalized)
 
     if verbose:
-        print(f"\n{'rank':>4}  {'claim':<14}  "
-              f"{'KL drift':>9}  {'Δ struct':>9}  {'composite':>11}  description")
-        print('-' * 110)
-        for i, s in enumerate(scores):
-            print(f"{i+1:>4}  {s.claim.name:<14}  "
-                  f"{s.kl_drift:9.4f}  {s.structural_term:9.3f}  "
-                  f"{s.composite:11.3f}  {s.claim.summary[:60]}")
-
+        pretty_print_engine_scores(scores)
     return scores
 
 
