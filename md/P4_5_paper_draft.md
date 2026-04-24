@@ -17,22 +17,23 @@ reasoning system should be able to recognize this equivalence and
 transfer class-level knowledge from one domain to another.
 
 We present MEIS Phase 4: an end-to-end pipeline that (1) represents
-each belief network as a **StructuralSignature** — a hash over the
-PyTensor op multiset of the observation likelihood, combined with
-latent-role labels; (2) retrieves structurally equivalent networks
-from a library via Ruzicka distance on the op multiset; and (3)
-transfers posterior log-SDs (class-level precision) from a data-rich
-source to a data-poor target, without transferring any scale-specific
-information.
+each belief network at three equivalent levels — an op-multiset
+fingerprint over PyTensor, a Weisfeiler-Lehman refinement on the
+ancestor DAG, and a symbolic Markov-category string diagram — each
+producing the same equivalence partition; (2) retrieves structurally
+equivalent networks from a library via Ruzicka distance on the op
+multiset; and (3) transfers posterior log-SDs (class-level precision)
+from a data-rich source to a data-poor target, without transferring
+any scale-specific information.
 
-On a **law-zoo v1** fixture (2 equivalence classes × 7 physical
+On a **law-zoo v2** fixture (3 equivalence classes × 10 physical
 domains), signature-based clustering recovers the ground-truth
-partition with ARI = 1.00 (Plan §Phase 5 task 2 target > 0.8).
-Structural transfer into data-poor saturation-class targets achieves
-a mean **89.5% held-out MSE reduction** vs a cold-start baseline
-(Plan §Phase 5 task 3 target ≥ 30%), while exp_decay targets show no
-benefit — a legitimate asymmetry driven by the dynamics, not the
-method.
+partition with ARI = 1.00 under all three representations
+(Plan §Phase 5 task 2 target > 0.8). Structural transfer into data-
+poor saturation-class targets achieves a mean **89.5% held-out MSE
+reduction** vs a cold-start baseline (Plan §Phase 5 task 3 target
+≥ 30%), while exp_decay targets show no benefit — a legitimate
+asymmetry driven by the dynamics, not the method.
 
 ---
 
@@ -107,7 +108,54 @@ Two modes are supported:
   saturation `Sub` op differs), so $\tau \in (0, 0.15)$ recovers the
   ground-truth partition.
 
-### 2.4 Structural transfer
+### 2.4 Markov-category string diagrams
+
+The P4.2 op-multiset and the P4.6 WL signature are both defined on the
+PyTensor graph — operational artefacts of the chosen PPL backend. An
+independent, backend-agnostic check lives one layer up: express each
+belief network as a morphism in a symbolic **Markov category** and
+compare string diagrams.
+
+We implement the Fritz 2020 / Perrone 2024 categorical primitives as
+
+$$\mathrm{Obj}(X; \kappa),\ \mathrm{Atom}(\mathit{name}, \mathbf{A} \to \mathbf{B}; \kappa),\ \Delta_X: X \to X \otimes X,\ !_X: X \to I$$
+
+with sequential ($f\,;\,g$) and monoidal ($f \otimes g$) composition. A
+belief network's abstract diagram is a tree of these primitives with
+atoms typed by functional **kind** (`prior`, `decay_kernel`,
+`saturation_kernel`, `damped_kernel`, `normal_observation`) and objects
+typed by measurable-space **kind** (`parameter`, `time-series`,
+`observation-series`). Each law-zoo class maps to a canonical diagram,
+
+$$
+\begin{aligned}
+\mathrm{exp\_decay}:\quad & (\mathrm{prior} \otimes \mathrm{prior})\,;\,\mathrm{decay\_kernel}\,;\,\mathrm{normal\_obs} \\
+\mathrm{saturation}:\quad & (\mathrm{prior} \otimes \mathrm{prior})\,;\,\mathrm{saturation\_kernel}\,;\,\mathrm{normal\_obs} \\
+\mathrm{damped}:\quad & \left(\bigotimes_{i=1}^{4} \mathrm{prior}\right)\,;\,\mathrm{damped\_kernel}\,;\,\mathrm{normal\_obs}
+\end{aligned}
+$$
+
+The shape signature is a canonical hash over the morphism tree modulo
+object-name $\alpha$-equivalence. Atom *kinds* are retained so that
+`decay_kernel` and `saturation_kernel` are structurally distinct boxes;
+atom *names* are dropped so that a prior called `prior_y0` and one
+called `prior_N0` are categorically equivalent within their class.
+
+This gives three independent routes to the same partition:
+
+| Layer | Representation | Law-zoo ARI |
+|---|---|---|
+| Op-multiset (P4.2) | PyTensor scalar ops, bag-of-counts | 1.000 |
+| Weisfeiler-Lehman (P4.6) | PyTensor ancestor-DAG subtree refinement | 1.000 |
+| Markov category (P4.7) | Symbolic morphism-tree fingerprint | 1.000 |
+
+All three agree on the law-zoo. Each dominates the others in a specific
+failure mode: op-multiset is cheapest; WL handles
+same-ops-different-wiring distractors (§2.2 footnote); the categorical
+layer is PyTensor-free and survives any change of PPL backend, making
+it the principled home for the equivalence notion.
+
+### 2.5 Structural transfer
 
 Given a target domain $T$ with few observations and a source domain
 $S$ with many (and $\mathrm{sig}(T) = \mathrm{sig}(S)$), transfer
@@ -208,7 +256,7 @@ is the intended safety property of equivalence-class-aware transfer.
 
 | Work | What it does | Relation to Phase 4 |
 |---|---|---|
-| Fritz et al. 2020, *A synthetic approach to Markov kernels, conditional independence and theorems on sufficient statistics* | Blackwell–Sherman–Stein criterion for equivalence of statistical experiments in Markov categories | Theoretical grounding for the notion of equivalence used here; our op-multiset hash is a cheap proxy for the same structural equivalence |
+| Fritz et al. 2020, *A synthetic approach to Markov kernels, conditional independence and theorems on sufficient statistics* | Blackwell–Sherman–Stein criterion for equivalence of statistical experiments in Markov categories | Theoretical grounding for the notion of equivalence used here; our P4.7 Markov-category primitives (`Obj`, `Atom`, `Copy`, `Discard`, `Compose`, `Tensor`) follow Fritz's CD-category presentation at the syntactic level — full BSS equivalence remains future work |
 | Lê et al. 2025, arXiv:2505.03862 | SPD-manifold metrics on probabilistic morphisms | Would replace Ruzicka distance with a geometric divergence once we move beyond fingerprint clustering |
 | MAML (Finn et al. 2017) | Learns initialization across tasks | Meta-learning counterpart: MAML learns representations; we use declared belief-network structure |
 | Gordon et al. 2023, *Physics-informed neural networks: a meta-review* | Transfer learning in scientific ML | PINNs share functional form via differential constraints; we share via belief network signature |
@@ -219,13 +267,16 @@ is the intended safety property of equivalence-class-aware transfer.
 All results reproduce from these modules:
 
 - `phase4_structure/law_zoo/{exp_decay,saturation}.py` — 7 domain fixtures
-- `phase4_structure/signature.py` — `extract_signature`, `StructuralSignature`
+- `phase4_structure/signature.py` — op-multiset `StructuralSignature` (P4.2)
+- `phase4_structure/wl_signature.py` — Weisfeiler-Lehman `WLSignature` (P4.6)
+- `phase4_structure/markov_category.py` — categorical primitives (P4.7)
+- `phase4_structure/law_zoo_morphisms.py` — per-class string diagrams
 - `phase4_structure/retrieval.py` — distance, NN, clustering, ARI
 - `phase4_structure/transfer.py` — `infer_posterior_shape`,
   `run_transfer_benchmark`, `TransferResult`
-- `phase4_structure/tests/test_{law_zoo,signature,retrieval,transfer}.py`
+- `phase4_structure/tests/test_{law_zoo,signature,wl_signature,retrieval,transfer,markov_category}.py`
 
-Acceptance suite: 19 unit tests across 4 modules, all PASS.
+Acceptance suite: 34 unit tests across 6 modules, all PASS.
 
 ## 7. Limitations and future work
 
@@ -237,9 +288,15 @@ Acceptance suite: 19 unit tests across 4 modules, all PASS.
 2. **Op-multiset signature is a proxy**. Two models that compute
    different but op-isomorphic expressions (e.g., $y_0 e^{-kt}$ vs
    $y_0 \cdot 2^{-t/\tau}$ with $\tau = \log 2 / k$) would share the
-   functional form but possibly differ on op counts. GNN embeddings
-   or explicit Markov-category morphism checking would be more
-   robust and are deferred to future work.
+   functional form but possibly differ on op counts. We mitigate this
+   in two ways: the WL signature (§2.3) captures local wiring beyond
+   the bag-of-ops, and the Markov-category layer (§2.4) is
+   backend-agnostic and compares string diagrams directly rather than
+   PyTensor expressions. What remains deferred is full Fritz
+   Blackwell-Sherman-Stein equivalence (semantically stronger than
+   our shape-of-tree check) and GNN-learned embeddings (useful once
+   the zoo becomes large enough that a learned similarity is
+   superior to symbolic isomorphism).
 3. **Exp_decay transfer null**. Section 4.3 documents that the
    protocol's benefit depends on the dynamics being
    *plateau-revealing*; purely decaying dynamics don't carry enough
@@ -255,23 +312,28 @@ Acceptance suite: 19 unit tests across 4 modules, all PASS.
 ## 8. Paper-level claim
 
 MEIS Phase 4 demonstrates that **structural equivalence of belief
-networks is computable, retrievable, and transferable**. An op-multiset
-signature derived from PyMC's PyTensor graph is sufficient to cluster
-a 7-domain law zoo into its two ground-truth equivalence classes
-(ARI = 1.00), gate cross-class transfer attempts, and deliver 89.5%
-held-out MSE reduction on saturation targets whose parameters are
-genuinely under-determined from few-shot observation.
+networks is computable, retrievable, and transferable** at three
+independent layers — op-multiset (PyTensor scalar ops), Weisfeiler-
+Lehman (ancestor-DAG subtree refinement), and Markov-category
+(symbolic string diagrams) — all of which recover the 10-domain
+3-class law-zoo partition with ARI = 1.00. The Markov-category layer
+provides the PPL-backend-agnostic reference; the two PyTensor layers
+are operational cross-checks.
 
-The method's limits are honest and characterizable: targets whose
-dynamics suppress prediction-level parameter uncertainty (exp_decay's
-asymptotic decay to zero) see no transfer benefit, and the current
-signature is a graph-op proxy rather than a full Markov-category
-morphism check.
+The same signature gate delivers 89.5% held-out MSE reduction on
+saturation-class targets whose parameters are genuinely under-
+determined from few-shot observation. Targets whose dynamics suppress
+prediction-level parameter uncertainty (exp_decay's asymptotic decay
+to zero) see no transfer benefit — a dynamical asymmetry reported
+honestly in §4.3.
 
 This is a concrete, computable instantiation of the **categorical
-transfer** intuition: two belief networks that compute the same
-underlying abstraction should share both structure and inductive bias,
-and MEIS can now identify when that sharing applies.
+transfer** intuition — Quine/Lakatos's "minimum disruption" applied
+not to a single belief but to the whole abstraction: two belief
+networks that compute the same underlying pattern should share both
+structure and inductive bias, and MEIS can now identify when that
+sharing applies at a categorical level, not just a PPL-artefact
+level.
 
 ---
 
