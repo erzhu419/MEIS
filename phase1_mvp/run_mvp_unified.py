@@ -62,6 +62,75 @@ SANITY_RANGES = {
     "dugongs":       (0.0,   3.0),    # sea cow length in meters
 }
 
+# Per-env prompts to elicit a STRUCTURED model distillation from the scientist.
+# The scientist has already produced a free-form NL explanation; now we ask
+# it to distill the model into a strict JSON form. This is the "bypass NL
+# bottleneck" path — the novice gets the parametric form directly.
+STRUCTURED_DISTILL_PROMPTS = {
+    "alice_charlie": (
+        "Now distill your understanding of the system into strict JSON. "
+        "Reply with ONLY a single JSON object (no prose, no markdown fences) "
+        "with these exact keys:\n"
+        "{\n"
+        '  "formula": "<a Python expression using variable name `height_cm`, returning weight in kg>",\n'
+        '  "parameters": {"name": value, ...},\n'
+        '  "explanation": "<one sentence of context>"\n'
+        "}\n"
+        "Example: "
+        '{"formula": "theta * height_cm ** 3", '
+        '"parameters": {"theta": 1.41e-5}, '
+        '"explanation": "weight scales as cube of height"}'
+    ),
+    "dugongs": (
+        "Now distill your understanding of the system into strict JSON. "
+        "Reply with ONLY a single JSON object (no prose, no markdown fences) "
+        "with these exact keys:\n"
+        "{\n"
+        '  "formula": "<a Python expression using variable name `age`, returning length in meters>",\n'
+        '  "parameters": {"name": value, ...},\n'
+        '  "explanation": "<one sentence of context>"\n'
+        "}\n"
+        "Example: "
+        '{"formula": "alpha - beta * (gamma ** age)", '
+        '"parameters": {"alpha": 2.0, "beta": 1.5, "gamma": 0.4}, '
+        '"explanation": "length saturates toward alpha from below"}'
+    ),
+}
+
+
+def _extract_json_blob(text: str) -> dict | None:
+    """Parse a JSON object from a possibly-fenced / prose-wrapped LLM reply."""
+    import re as _re
+    if text is None:
+        return None
+    # Strip code fences
+    s = _re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=_re.MULTILINE)
+    # Find outer-most { ... }
+    m = _re.search(r"\{.*\}", s, flags=_re.DOTALL)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(0))
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
+def _distill_structured_model(scientist, env_name: str, max_tries: int = 3
+                              ) -> dict | None:
+    """Ask the scientist for a JSON-form model distillation; parse it.
+    Returns None if parsing fails after max_tries."""
+    prompt = STRUCTURED_DISTILL_PROMPTS.get(env_name)
+    if prompt is None:
+        return None
+    for _ in range(max_tries):
+        reply = scientist.prompt_llm(prompt)
+        parsed = _extract_json_blob(reply)
+        if isinstance(parsed, dict) and "formula" in parsed and "parameters" in parsed:
+            return parsed
+        prompt = ("Your previous response was not valid strict JSON. Try again. "
+                  + prompt)
+    return None
+
 
 def _predict_with_sanity_retry(novice, question: str, env_name: str,
                                enabled: bool, max_retries: int = 3
@@ -107,7 +176,8 @@ def _make_agent(kind: str, *, model_name: str, library: PriorLibrary,
 
 
 def config_tag(scientist_priors: bool, novice_priors: bool, echo_anchor: bool,
-               prior_k: int = 5, sanity_retry: bool = False) -> str:
+               prior_k: int = 5, sanity_retry: bool = False,
+               structured_channel: bool = False) -> str:
     # Canonical four tags used in Step 3.5 (implicit k=5, no sanity)
     if not scientist_priors and not novice_priors and echo_anchor:
         base = "baseline_echo"
@@ -124,6 +194,8 @@ def config_tag(scientist_priors: bool, novice_priors: bool, echo_anchor: bool,
         base = f"{base}_k{prior_k}"
     if sanity_retry:
         base = f"{base}_sanity"
+    if structured_channel:
+        base = f"{base}_structured"
     return base
 
 
@@ -133,6 +205,7 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
             echo_anchor: bool = True,
             prior_k: int = 5,
             sanity_retry: bool = False,
+            structured_channel: bool = False,
             num_experiments: int = 10, num_evals: int = 10,
             com_limit: int = 200, include_prior: bool = True,
             temperature: float = 0.0, max_tokens: int = 512):
@@ -182,12 +255,27 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
 
     final_results = f"The final result is {observation}." if echo_anchor else ""
 
-    # --- Scientist writes explanation for novice ---
+    # --- Scientist writes explanation for novice (always, for audit) ---
     comm_prompt = goal.get_comm_prompt(com_limit=com_limit, include_prior=include_prior)
     explanation = scientist.prompt_llm(comm_prompt)
 
-    # --- Novice reads system message + explanation, predicts ---
-    naive_system_message = goal.get_naive_system_message(include_prior) + explanation
+    # --- Optional: also distill a structured JSON model (Step 3.9 bypass-NL) ---
+    structured_model: dict | None = None
+    if structured_channel:
+        structured_model = _distill_structured_model(scientist, env_name)
+
+    # --- Novice reads system message + either NL explanation OR structured model ---
+    if structured_channel and structured_model is not None:
+        struct_blob = json.dumps(structured_model, indent=2, ensure_ascii=False)
+        structured_msg = (
+            "The scientist has extracted the following structured model from "
+            "their experiments. You MUST apply this formula to make each "
+            "prediction — substitute the given input value and compute.\n\n"
+            + struct_blob
+        )
+        naive_system_message = goal.get_naive_system_message(include_prior) + structured_msg
+    else:
+        naive_system_message = goal.get_naive_system_message(include_prior) + explanation
     novice.set_system_message(naive_system_message)
 
     predictions, gts, questions, sanity_retries = [], [], [], []
@@ -207,7 +295,8 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
     err_mean, err_std = goal.evaluate_predictions(predictions, gts)
 
     tag = config_tag(scientist_priors, novice_priors, echo_anchor,
-                     prior_k=prior_k, sanity_retry=sanity_retry)
+                     prior_k=prior_k, sanity_retry=sanity_retry,
+                     structured_channel=structured_channel)
     out_dir = RUNS_ROOT / env_name / tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -230,6 +319,8 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
                 "sanity_retry": sanity_retry,
                 "sanity_range": SANITY_RANGES.get(env_name),
                 "sanity_retries_per_eval": sanity_retries,
+                "structured_channel": structured_channel,
+                "structured_model": structured_model,
                 "prior_query": prior_query,
                 "prior_k": prior_k,
                 "prior_header": DEFAULT_PRIOR_HEADER,
@@ -268,6 +359,9 @@ if __name__ == "__main__":
     p.add_argument("--prior-k", type=int, default=5)
     p.add_argument("--sanity-retry", action="store_true",
                    help="If predictions fall outside SANITY_RANGES, retry with warning.")
+    p.add_argument("--structured-channel", action="store_true",
+                   help="After NL explanation, ask scientist for a strict-JSON model; "
+                        "feed that to the novice instead of the NL explanation.")
     args = p.parse_args()
     run_mvp(
         seed=args.seed, model_name=args.model, env_name=args.env,
@@ -276,4 +370,5 @@ if __name__ == "__main__":
         echo_anchor=not args.no_echo_anchor,
         prior_k=args.prior_k,
         sanity_retry=args.sanity_retry,
+        structured_channel=args.structured_channel,
     )
