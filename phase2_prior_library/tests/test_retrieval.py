@@ -12,13 +12,23 @@ from phase2_prior_library.retrieval import PriorLibrary
 
 def test_load():
     lib = PriorLibrary.load_default()
-    assert len(lib.entries) == 14, f"expected 14 entries, got {len(lib.entries)}"
+    # Library has grown across phases:
+    #   human_body.json            : 10 entries (Step 2)
+    #   growth_curves.json         :  4 entries (Step 3.5 dugongs pivot)
+    #   dynamics_multivariate.json :  3 entries (Step 3.10 lotka_volterra)
+    #   count_regression.json      :  3 entries (P2.1 peregrines)
+    #                     total    : 20
+    assert len(lib.entries) == 20, f"expected 20 entries, got {len(lib.entries)}"
     domains = {e.get("domain") for e in lib.entries}
+    # Phase 1 domains
     assert "human_body" in domains
     assert "classical_mechanics" in domains
     assert "soil_mechanics" in domains
     assert "biology" in domains
     assert "dynamics" in domains
+    # Phase 2 additions
+    assert "population_dynamics" in domains
+    assert "count_regression" in domains
     # schema check
     for e in lib.entries:
         assert "id" in e and "keywords" in e and "statement" in e
