@@ -1,15 +1,17 @@
-"""Validation for P2.3 commit-2: in-memory belief store.
+"""Validation for P2.3 commits 2 + 3: in-memory + on-disk belief store.
 
-Covers 5 of the 7 acceptance tests from md/P2_3_persistent_belief_network_design.md §6:
+Covers 6 of the 7 acceptance tests from md/P2_3_persistent_belief_network_design.md §6:
   (1) test_fresh_store_from_library            — build from PriorLibrary
   (2) test_single_conjugate_update_matches_phase1 — parity with kl_drift
   (4) test_hypothesis_ranking_persists         — deterministic rankings
+  (5) test_evidence_is_append_only             — disk evidence never rewritten (commit 3)
   (6) test_rollback_to_snapshot                — restore to prior state
   (7) test_cross_domain_query                  — tag-overlap retrieval
 
-Skipped in commit 2 (deferred to commit 3):
+Plus a round-trip test (save → load → same state) covering commit-3 I/O.
+
+Skipped (deferred to later commit):
   (3) test_non_conjugate_update_via_mcmc       — needs MCMC dispatch
-  (5) test_evidence_is_append_only             — needs disk I/O
 
 Run:
     python -m phase3_embedding.tests.test_belief_store
@@ -17,7 +19,10 @@ Run:
 
 from __future__ import annotations
 
+import json
 import math
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -214,11 +219,144 @@ def test_cross_domain_query():
     print(f"[PASS] cross-domain query: top-3 for 'density body' = {ids}")
 
 
+# -----------------------------------------------------------------------------
+# (5) evidence files are append-only across save() calls (commit 3)
+# -----------------------------------------------------------------------------
+def test_evidence_is_append_only():
+    """Save a store, add more evidence, save again. The original evidence
+    files must still exist, byte-for-byte unchanged."""
+    lib = PriorLibrary.load_default()
+    store = BeliefStore.from_library(lib)
+    theta_id = "weight_from_height_cube_law::theta"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+
+        # Round 1: add 2 observations, save
+        for i in range(2):
+            store.add_evidence(
+                Evidence(id=f"run1_obs_{i}", kind="observation",
+                         target_nodes=[theta_id], value=70.0 + i, x=170.0 ** 3,
+                         provenance="round_1"),
+                obs_sigma=2.0,
+            )
+        store.save(root)
+        assert (root / "evidence" / "run1_obs_0.json").exists()
+        original_contents = {
+            fname: (root / "evidence" / fname).read_bytes()
+            for fname in ("run1_obs_0.json", "run1_obs_1.json")
+        }
+
+        # Round 2: add 3 more observations, save again
+        for i in range(3):
+            store.add_evidence(
+                Evidence(id=f"run2_obs_{i}", kind="observation",
+                         target_nodes=[theta_id], value=60.0 + i, x=165.0 ** 3,
+                         provenance="round_2"),
+                obs_sigma=2.0,
+            )
+        store.save(root)
+
+        # All 5 files must exist
+        on_disk = {p.name for p in (root / "evidence").glob("*.json")}
+        assert on_disk == {"run1_obs_0.json", "run1_obs_1.json",
+                           "run2_obs_0.json", "run2_obs_1.json", "run2_obs_2.json"}, \
+            f"unexpected evidence files on disk: {on_disk}"
+
+        # Round-1 files must be byte-identical to their original content
+        for fname, original in original_contents.items():
+            current = (root / "evidence" / fname).read_bytes()
+            assert current == original, f"{fname} mutated between save() calls"
+
+        print(f"[PASS] 5 evidence files persisted, 2 round-1 files unchanged across 2 save() calls")
+
+
+# -----------------------------------------------------------------------------
+# Round-trip: save → load produces equivalent state
+# -----------------------------------------------------------------------------
+def test_disk_roundtrip():
+    lib = PriorLibrary.load_default()
+    store = BeliefStore.from_library(lib)
+    theta_id = "weight_from_height_cube_law::theta"
+
+    # Mutate with a handful of observations so there's posterior drift
+    for i in range(5):
+        store.add_evidence(
+            Evidence(id=f"obs_{i}", kind="observation",
+                     target_nodes=[theta_id], value=70.0 + i * 0.5,
+                     x=(168 + i) ** 3, provenance="roundtrip_test"),
+            obs_sigma=2.0,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        store.save(root)
+
+        # Verify directory layout
+        assert (root / "nodes").is_dir()
+        assert (root / "relations").is_dir()
+        assert (root / "evidence").is_dir()
+        assert len(list((root / "nodes").glob("*.json"))) > 0
+
+        reloaded = BeliefStore.load(root)
+
+    # Same counts
+    assert len(reloaded.nodes) == len(store.nodes)
+    assert len(reloaded.relations) == len(store.relations)
+    assert len(reloaded.evidence) == len(store.evidence)
+
+    # Same posterior on the mutated node
+    a = store.get_node(theta_id).posterior
+    b = reloaded.get_node(theta_id).posterior
+    assert a.kind == b.kind == "gaussian"
+    assert abs(a.mu - b.mu) < 1e-12
+    assert abs(a.sigma - b.sigma) < 1e-12
+
+    # Sources preserved (tracks that updates were applied)
+    assert set(store.get_node(theta_id).sources) == set(
+        reloaded.get_node(theta_id).sources)
+
+    print(f"[PASS] save→load round-trip preserves state: "
+          f"{len(reloaded.nodes)} nodes, "
+          f"{len(reloaded.relations)} relations, "
+          f"{len(reloaded.evidence)} evidence records")
+
+
+# -----------------------------------------------------------------------------
+# Sample-based posterior disk support
+# -----------------------------------------------------------------------------
+def test_disk_sample_posterior_roundtrip():
+    """Nodes with kind='samples' should save samples to .npz and restore them."""
+    store = BeliefStore()
+    rng = np.random.default_rng(0)
+    samples = rng.normal(5.0, 2.0, size=500)
+    store.nodes["sample_node"] = Node(
+        id="sample_node", domain="test", name="test", type="continuous",
+        posterior=PosteriorHandle(kind="samples", samples=samples),
+        tags=["test"],
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        store.save(root)
+        # Confirm .npz exists
+        assert (root / "nodes" / "sample_node.samples.npz").exists()
+        reloaded = BeliefStore.load(root)
+    restored = reloaded.get_node("sample_node").posterior
+    assert restored.kind == "samples"
+    assert restored.samples.shape == samples.shape
+    assert np.allclose(restored.samples, samples)
+    print(f"[PASS] sample-based posterior ({len(samples)} draws) survives disk roundtrip")
+
+
 if __name__ == "__main__":
-    print("=== P2.3 commit-2 validation: in-memory BeliefStore ===\n")
+    print("=== P2.3 commits 2+3 validation: in-memory + on-disk BeliefStore ===\n")
     test_fresh_store_from_library()
     test_single_conjugate_update_matches_phase1()
     test_hypothesis_ranking_persists()
     test_rollback_to_snapshot()
     test_cross_domain_query()
-    print("\nAll 5 commit-2 checks passed. Tests 3 (MCMC) and 5 (disk) deferred to commit 3.")
+    test_evidence_is_append_only()
+    test_disk_roundtrip()
+    test_disk_sample_posterior_roundtrip()
+    print("\nAll 8 checks passed (6/7 acceptance + 2 disk round-trips). "
+          "Test 3 (non-conjugate MCMC update) still deferred.")

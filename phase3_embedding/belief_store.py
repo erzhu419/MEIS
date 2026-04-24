@@ -23,9 +23,13 @@ Out of scope (commit 3+):
 from __future__ import annotations
 
 import copy
+import json
+import os
 import re
-from dataclasses import dataclass, field
+import tempfile
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -311,8 +315,228 @@ class BeliefStore:
         self.relations = copy.deepcopy(snap["relations"])
         self.evidence = list(snap["evidence"])
 
+    # -- Disk I/O (commit 3) ------------------------------------------------
+    def save(self, path: str | Path) -> None:
+        """Serialise the full store to `path/{nodes,relations,evidence}/*.json`.
+
+        Guarantees:
+          - Atomic per-file writes (tempfile + fsync + os.replace)
+          - Evidence is **append-only**: existing evidence files are never
+            overwritten or deleted — they may only be augmented by new ids.
+          - Node/relation files CAN be overwritten (posterior updates), but
+            a `.prev.json` backup is kept beside each for one-step rollback.
+          - Sample-based posteriors save samples to `.samples.npz` beside
+            the JSON; the JSON references the npz file by relative path.
+        """
+        root = Path(path)
+        (root / "nodes").mkdir(parents=True, exist_ok=True)
+        (root / "relations").mkdir(parents=True, exist_ok=True)
+        (root / "evidence").mkdir(parents=True, exist_ok=True)
+
+        for node in self.nodes.values():
+            self._save_node(root, node)
+        for rel in self.relations.values():
+            _atomic_write_json(root / "relations" / _sanitize(rel.id, ".json"),
+                               _relation_to_dict(rel))
+        # Evidence append-only: write only files that don't exist yet.
+        for ev in self.evidence:
+            target = root / "evidence" / _sanitize(ev.id, ".json")
+            if not target.exists():
+                _atomic_write_json(target, _evidence_to_dict(ev))
+
+    def _save_node(self, root: Path, node: Node) -> None:
+        nodes_dir = root / "nodes"
+        target = nodes_dir / _sanitize(node.id, ".json")
+        # Preserve previous-version copy for one-step rollback (per design §3).
+        if target.exists():
+            prev = nodes_dir / _sanitize(node.id, ".prev.json")
+            prev.write_bytes(target.read_bytes())
+        payload, samples_arr = _node_to_dict(node)
+        if samples_arr is not None:
+            npz_rel = _sanitize(node.id, ".samples.npz")
+            np.savez_compressed(nodes_dir / npz_rel, samples=samples_arr)
+            payload["posterior"]["samples_ref"] = f"nodes/{npz_rel}"
+        _atomic_write_json(target, payload)
+
+    @classmethod
+    def load(cls, path: str | Path) -> "BeliefStore":
+        """Load the full store from the on-disk layout produced by `.save`."""
+        root = Path(path)
+        store = cls()
+        for p in sorted((root / "nodes").glob("*.json")):
+            if p.name.endswith(".prev.json"):
+                continue
+            payload = json.loads(p.read_text())
+            node = _node_from_dict(payload, root)
+            store.nodes[node.id] = node
+        for p in sorted((root / "relations").glob("*.json")):
+            store.relations[p.stem.replace("__", "::")] = _relation_from_dict(
+                json.loads(p.read_text()))
+        # Evidence ordered by timestamp field when present, else filename.
+        ev_paths = sorted((root / "evidence").glob("*.json"))
+        for p in ev_paths:
+            store.evidence.append(_evidence_from_dict(json.loads(p.read_text())))
+        # Stable chronological ordering by timestamp when available.
+        store.evidence.sort(key=lambda e: e.timestamp or "")
+        return store
+
     # -- Summary (for logging / debugging) ---------------------------------
     def summary(self) -> str:
         return (f"BeliefStore(nodes={len(self.nodes)}, "
                 f"relations={len(self.relations)}, "
                 f"evidence={len(self.evidence)})")
+
+
+# =============================================================================
+# Serialisation helpers (module-level, commit 3)
+# =============================================================================
+_UNSAFE = re.compile(r"[^a-zA-Z0-9_.\-]+")
+
+
+def _sanitize(node_id: str, suffix: str) -> str:
+    """Filesystem-safe filename while keeping the id humanly recognisable.
+    `::` becomes `__` (reversible); any other unsafe char becomes `_`."""
+    safe = node_id.replace("::", "__")
+    safe = _UNSAFE.sub("_", safe)
+    return safe + suffix
+
+
+def _atomic_write_json(path: Path, payload: dict) -> None:
+    """tempfile in same directory → fsync → os.replace (atomic on Linux)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", delete=False,
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp",
+    )
+    try:
+        json.dump(payload, tmp, indent=2, ensure_ascii=False, default=_json_default)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp.close()
+        os.replace(tmp.name, path)
+    except Exception:
+        # Clean up tempfile if anything went wrong before the rename.
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+        raise
+
+
+def _json_default(o: Any) -> Any:
+    if isinstance(o, (np.integer,)):
+        return int(o)
+    if isinstance(o, (np.floating,)):
+        return float(o)
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    raise TypeError(f"not JSON-serialisable: {type(o).__name__}")
+
+
+def _node_to_dict(node: Node) -> tuple[dict, np.ndarray | None]:
+    """Returns (payload_dict, samples_arr_or_None).
+
+    Samples-based posteriors are kept out of the JSON and returned separately
+    so the caller can npz-compress them beside the node file.
+    """
+    posterior_d: dict[str, Any] = {"kind": node.posterior.kind}
+    samples_arr: np.ndarray | None = None
+    if node.posterior.kind == "gaussian":
+        posterior_d["mu"] = float(node.posterior.mu)  # type: ignore[arg-type]
+        posterior_d["sigma"] = float(node.posterior.sigma)  # type: ignore[arg-type]
+    elif node.posterior.kind == "deterministic":
+        posterior_d["mu"] = float(node.posterior.mu)  # type: ignore[arg-type]
+    elif node.posterior.kind == "samples":
+        samples_arr = np.asarray(node.posterior.samples, dtype=float)
+    return {
+        "id": node.id,
+        "domain": node.domain,
+        "name": node.name,
+        "type": node.type,
+        "posterior": posterior_d,
+        "tags": list(node.tags),
+        "sources": list(node.sources),
+        "created_at": node.created_at,
+        "last_updated_at": node.last_updated_at,
+    }, samples_arr
+
+
+def _node_from_dict(payload: dict, root: Path) -> Node:
+    p = payload["posterior"]
+    if p["kind"] == "gaussian":
+        post = PosteriorHandle(kind="gaussian", mu=float(p["mu"]), sigma=float(p["sigma"]))
+    elif p["kind"] == "deterministic":
+        post = PosteriorHandle(kind="deterministic", mu=float(p["mu"]))
+    elif p["kind"] == "samples":
+        npz_path = root / p["samples_ref"]
+        with np.load(npz_path) as z:
+            samples = z["samples"].astype(float)
+        post = PosteriorHandle(kind="samples", samples=samples)
+    else:
+        raise ValueError(f"unknown posterior kind on disk: {p['kind']}")
+    return Node(
+        id=payload["id"],
+        domain=payload["domain"],
+        name=payload["name"],
+        type=payload["type"],
+        posterior=post,
+        tags=list(payload.get("tags", [])),
+        sources=list(payload.get("sources", [])),
+        created_at=payload.get("created_at", ""),
+        last_updated_at=payload.get("last_updated_at", ""),
+    )
+
+
+def _relation_to_dict(rel: Relation) -> dict:
+    return {
+        "id": rel.id,
+        "from_nodes": list(rel.from_nodes),
+        "to_node": rel.to_node,
+        "relation_expr": rel.relation_expr,
+        "noise_model": rel.noise_model,
+        "noise_params": dict(rel.noise_params),
+        "source": rel.source,
+        "strength": float(rel.strength),
+    }
+
+
+def _relation_from_dict(payload: dict) -> Relation:
+    return Relation(
+        id=payload["id"],
+        from_nodes=list(payload.get("from_nodes", [])),
+        to_node=payload.get("to_node", ""),
+        relation_expr=payload.get("relation_expr", ""),
+        noise_model=payload.get("noise_model", "Normal"),
+        noise_params=dict(payload.get("noise_params", {})),
+        source=payload.get("source", ""),
+        strength=float(payload.get("strength", 1.0)),
+    )
+
+
+def _evidence_to_dict(ev: Evidence) -> dict:
+    # ev.value can be scalar / list / tuple / dict — JSON handles all with
+    # _json_default for numpy scalars.
+    val = ev.value
+    if isinstance(val, np.ndarray):
+        val = val.tolist()
+    return {
+        "id": ev.id,
+        "kind": ev.kind,
+        "target_nodes": list(ev.target_nodes),
+        "value": val,
+        "x": None if ev.x is None else float(ev.x),
+        "timestamp": ev.timestamp,
+        "provenance": ev.provenance,
+    }
+
+
+def _evidence_from_dict(payload: dict) -> Evidence:
+    return Evidence(
+        id=payload["id"],
+        kind=payload.get("kind", "observation"),
+        target_nodes=list(payload.get("target_nodes", [])),
+        value=payload.get("value"),
+        x=payload.get("x"),
+        timestamp=payload.get("timestamp", ""),
+        provenance=payload.get("provenance", ""),
+    )
