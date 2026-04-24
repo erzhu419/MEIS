@@ -107,6 +107,22 @@ posterior drift (it is disconnected from the target), so pure-KL
 reasoning ranks the orphan \emph{highest} among candidates, exactly
 the opposite of the correct answer.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.78\linewidth]{figs/intuition_web_of_belief.png}
+  \caption{Intuition for the minimum-embedding score. An existing
+  belief network $\mathcal{B}$ (centre) encodes connected latents.
+  An in-vocabulary hypothesis $h_{\mathrm{in\text{-}vocab}}$ (left, green)
+  attaches into an existing node and induces a small posterior drift.
+  An orphan hypothesis $h_{\mathrm{orphan}}$ (right, red) adds two
+  disconnected nodes with no causal path to the target; pure KL
+  drift alone scores it \emph{first} (near-zero perturbation),
+  the opposite of the desired behaviour. The composite score
+  $D = D_{\mathrm{KL}} + \lambda |\Delta|$ penalises the orphan's
+  unsupported nodes and ranks it last.}
+  \label{fig:web-of-belief}
+\end{figure}
+
 This paper proposes and validates an additive composite score
 \begin{equation}
 \label{eq:D-headline}
@@ -398,6 +414,24 @@ $\sim 92\times$ margin relative to the highest-scoring in-vocabulary
 claim (Table~\ref{tab:alice-charlie}). Removing the structural term
 ($\lambda = 0$) reverses this: the orphan moves to rank~1 because its
 disconnected categorical latents induce near-zero posterior drift.
+Figure~\ref{fig:D-decomposition} shows the additive decomposition of
+$D$ per candidate: the blue $D_{\mathrm{KL}}$ bars are small for all
+four claims, while the red $\lambda |\Delta|$ bar is zero for the
+three in-vocabulary claims and dominant for the orphan.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\linewidth]{figs/intuition_D_decomposition.png}
+  \caption{The additive decomposition of $D(h, \mathcal{B})$ on the
+  Alice-Charlie benchmark. Each row is a candidate claim. KL drift
+  (blue, left column) is small for all claims; structural penalty
+  (red, middle column) is zero for the three in-vocabulary claims and
+  large for the orphan. Their sum (right column) reproduces
+  Table~\ref{tab:alice-charlie}'s ordering: $h_{3}, h_{2}, h_{1}$,
+  then $h_{\mathrm{orphan}}$ at roughly $92\times$ the largest in-vocabulary
+  score.}
+  \label{fig:D-decomposition}
+\end{figure}
 
 \subsection{Noh theater gender monopoly}
 \label{sec:noh}
