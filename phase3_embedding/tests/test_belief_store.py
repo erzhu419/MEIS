@@ -423,6 +423,57 @@ def test_persist_belief_two_run_accumulation():
               f"n_evidence {n_r1} → {n_r2}")
 
 
+def test_non_conjugate_update_via_mcmc():
+    """Design §6 acceptance test 3: add a Poisson evidence to a node with a
+    Gaussian prior, verify the posterior moves toward the data-implied
+    value via MCMC and is now stored as samples-based."""
+    # Fresh Node with Gaussian prior over alpha (a peregrines-like setup).
+    store = BeliefStore()
+    store.nodes["alpha"] = Node(
+        id="alpha", domain="test", name="alpha", type="continuous",
+        posterior=PosteriorHandle(kind="gaussian", mu=3.0, sigma=1.0),
+        tags=["log_rate"],
+    )
+
+    # Ground truth: alpha_true = 4.0
+    # Observation: y ~ Poisson(exp(alpha_true * 1.0)) ~ Poisson(54.6)
+    # With observed y = 55 at x = 1.0, posterior should shift from 3.0 toward 4.0.
+    alpha_true = 4.0
+    x = 1.0
+    y_obs = int(round(np.exp(alpha_true * x)))  # ~55
+
+    prior = store.get_node("alpha").posterior.as_gaussian()
+    store.add_evidence(
+        Evidence(id="obs_1", kind="observation",
+                 target_nodes=["alpha"], value=y_obs, x=x,
+                 provenance="poisson_test"),
+        likelihood="poisson", mcmc_seed=0,
+    )
+
+    post = store.get_node("alpha").posterior
+    # Should now be sample-based
+    assert post.kind == "samples"
+    assert post.samples is not None and post.samples.shape == (1200,)
+
+    # Posterior mean should have moved from 3.0 toward 4.0 (within 2 sample-std of truth)
+    post_mean = float(post.samples.mean())
+    post_std = float(post.samples.std(ddof=1))
+    assert post_mean > prior.mu + 0.3, \
+        f"posterior should move toward ground truth ({alpha_true}); "\
+        f"prior mu={prior.mu}, post mean={post_mean}"
+    assert abs(post_mean - alpha_true) < 2 * post_std, \
+        f"posterior mean {post_mean:.3f} should be within 2σ of truth {alpha_true}; "\
+        f"σ={post_std:.3f}"
+
+    # Evidence is recorded; node's sources updated
+    assert len(store.evidence) == 1
+    assert "obs_1" in store.get_node("alpha").sources
+
+    print(f"[PASS] Poisson MCMC update: prior N(3.00, 1.00) + obs y=55 @ x=1.0 "
+          f"→ posterior samples mean={post_mean:.3f} σ={post_std:.3f} "
+          f"(truth={alpha_true})")
+
+
 def test_sequential_demo_tightens_posterior():
     """P2.3 commit-5 acceptance: the sequential experiment demo should
     show Persist's posterior σ at least 2× tighter than Stateless at
@@ -476,9 +527,10 @@ def test_persist_belief_disabled_by_default_is_bitwise_identical():
 
 
 if __name__ == "__main__":
-    print("=== P2.3 commits 2+3+4+5 validation: belief store end-to-end ===\n")
+    print("=== P2.3 commits 2+3+4+5+C validation: belief store end-to-end ===\n")
     test_fresh_store_from_library()
     test_single_conjugate_update_matches_phase1()
+    test_non_conjugate_update_via_mcmc()
     test_hypothesis_ranking_persists()
     test_rollback_to_snapshot()
     test_cross_domain_query()
@@ -488,6 +540,4 @@ if __name__ == "__main__":
     test_persist_belief_two_run_accumulation()
     test_sequential_demo_tightens_posterior()
     test_persist_belief_disabled_by_default_is_bitwise_identical()
-    print("\nAll 11 checks passed (6/7 design-§6 acceptance + disk round-trips + "
-          "commit-4 persistence + commit-5 sequential demo acceptance). "
-          "Test 3 (non-conjugate MCMC update) still deferred.")
+    print("\nAll 12 checks passed — full design-§6 acceptance 7/7 now (test 3 MCMC added).")

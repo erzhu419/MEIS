@@ -250,35 +250,71 @@ class BeliefStore:
         scored.sort(key=lambda x: -x[0])
         return [n for _, n in scored[:k]]
 
-    # -- Conjugate evidence update -----------------------------------------
-    def add_evidence(self, ev: Evidence, obs_sigma: float | None = None) -> None:
-        """Conjugate Gaussian update path.
+    # -- Conjugate / non-conjugate evidence update -------------------------
+    def add_evidence(self, ev: Evidence, obs_sigma: float | None = None,
+                     likelihood: str = "normal",
+                     mcmc_draws: int = 600, mcmc_tune: int = 400,
+                     mcmc_chains: int = 2,
+                     mcmc_seed: int = 0) -> None:
+        """Update the target node's posterior with a new observation.
 
-        Expected shapes:
-          - ev.target_nodes = [theta_node_id]
-          - ev.x = covariate value (e.g. height_cm ** 3)
-          - ev.value = observation y (e.g. weight_kg)
-          - ev.kind = "observation"
+        Dispatch:
+          - likelihood="normal"  AND node.posterior.kind == "gaussian":
+              closed-form conjugate update via kl_drift.condition_normal.
+              Requires ev.x (covariate) and obs_sigma.
+          - likelihood="poisson":
+              MCMC rebuild of a log-rate-linear-in-theta Poisson model:
+                  y ~ Poisson(exp(theta * ev.x))
+              Starts from the node's current posterior (gaussian → prior;
+              samples → Gaussian-moment approximation), samples new
+              posterior, stores as samples-based PosteriorHandle.
 
-        Updates the target node's posterior in-place and records the
-        evidence in self.evidence (append-only in memory for now)."""
+        Future: other likelihoods (LogNormal, Binomial) via the same
+        MCMC-rebuild pattern. The dispatch is deliberately explicit so
+        subtle modeling choices (link functions, noise distributions)
+        are the caller's responsibility, not magic."""
         assert len(ev.target_nodes) == 1, \
-            "commit-2 only supports single-latent conjugate updates"
+            "single-latent updates only; multi-latent needs explicit model builder"
         tid = ev.target_nodes[0]
         node = self.nodes[tid]
-        if node.posterior.kind != "gaussian":
-            raise NotImplementedError(
-                "commit-2 only supports Gaussian-conjugate updates; "
-                "non-conjugate MCMC path is commit-3 scope")
-        if obs_sigma is None or ev.x is None:
-            raise ValueError(
-                "conjugate update requires obs_sigma and ev.x (covariate)")
-        prior = node.posterior.as_gaussian()
-        post = condition_normal(prior,
-                                np.array([ev.x]),
-                                np.array([float(ev.value)]),
-                                obs_sigma)
-        node.posterior = PosteriorHandle(kind="gaussian", mu=post.mu, sigma=post.sigma)
+
+        if likelihood == "normal":
+            if node.posterior.kind != "gaussian":
+                raise NotImplementedError(
+                    "Gaussian-conjugate update requires gaussian posterior; "
+                    "call with likelihood='poisson' or similar for sample-based nodes."
+                )
+            if obs_sigma is None or ev.x is None:
+                raise ValueError("conjugate update requires obs_sigma and ev.x")
+            prior = node.posterior.as_gaussian()
+            post = condition_normal(prior,
+                                    np.array([ev.x]),
+                                    np.array([float(ev.value)]),
+                                    obs_sigma)
+            node.posterior = PosteriorHandle(kind="gaussian", mu=post.mu, sigma=post.sigma)
+
+        elif likelihood == "poisson":
+            if ev.x is None:
+                raise ValueError("Poisson update requires ev.x (covariate)")
+            # Extract current posterior as Gaussian prior for MCMC
+            current = node.posterior.as_gaussian()
+            import pymc as pm
+            with pm.Model():
+                theta = pm.Normal("theta", mu=current.mu, sigma=current.sigma)
+                # Log-rate linear in theta: y ~ Poisson(exp(theta * x))
+                rate = pm.math.exp(theta * float(ev.x))
+                pm.Poisson("y_obs", mu=rate, observed=np.array([int(round(float(ev.value)))]))
+                trace = pm.sample(
+                    draws=mcmc_draws, tune=mcmc_tune, chains=mcmc_chains,
+                    random_seed=mcmc_seed, progressbar=False,
+                    return_inferencedata=False, compute_convergence_checks=False,
+                )
+            samples = np.asarray(trace["theta"])
+            node.posterior = PosteriorHandle(kind="samples", samples=samples)
+
+        else:
+            raise ValueError(f"unsupported likelihood: {likelihood}")
+
         node.sources.append(ev.id)
         node.last_updated_at = datetime.utcnow().isoformat()
         self.evidence.append(ev)
