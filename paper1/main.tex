@@ -216,7 +216,19 @@ components help on which environments.
 \section{System overview}
 \label{sec:system}
 
-MEIS is a four-layer architecture:
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.65\linewidth]{figs/intuition_architecture_stack.png}
+  \caption{MEIS four-layer architecture. Information flows down
+  (natural-language problem statement $\to$ structured priors $\to$
+  posterior inference) on the left and up (posterior $\to$ explanation)
+  on the right. Each layer stays in its own role: the LLM translates,
+  the sampler infers, the belief store persists, the metric layer
+  scores.}
+  \label{fig:arch}
+\end{figure}
+
+MEIS is a four-layer architecture (Figure~\ref{fig:arch}):
 \begin{itemize}[leftmargin=*, itemsep=0pt]
 \item \textbf{L1 --- Representation.} PyMC belief network
 \citep{salvatier2016pymc} with typed random variables and
@@ -389,8 +401,22 @@ does not typically measure but which matters in deployment.
 \subsection{Structured-channel ablation}
 \label{sec:exp-structured}
 
-We next ablate the LLM $\to$ PyMC handoff interface. Both conditions
-switch from NL prose to structured JSON:
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.58\linewidth]{figs/intuition_nl_vs_structured_channel.png}
+  \caption{The NL-mediated prior bottleneck. Same LLM, same inference
+  target, two different output channels. Left pipeline (prose)
+  forces the LLM to be both reasoner and output formatter; the PyMC
+  sampler must parse the resulting ambiguity. Right pipeline
+  (structured JSON) removes the formatter role; the sampler sees a
+  typed contract. On Peregrines baseline, mean absolute error drops
+  from $181.6$ to $23.4$ --- an $87\%$ reduction.}
+  \label{fig:nl-vs-structured}
+\end{figure}
+
+We next ablate the LLM $\to$ PyMC handoff interface
+(Figure~\ref{fig:nl-vs-structured}). Both conditions switch from NL
+prose to structured JSON:
 
 \begin{table}[h]
 \centering

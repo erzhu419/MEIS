@@ -278,10 +278,23 @@ Class & Functional form $\mu(\theta, t)$ & Domains \\
 \section{The four-layer structural equivalence stack}
 \label{sec:sig-stack}
 
-This section develops four complementary equivalence tests, each of
-which partitions the $10$-domain law-zoo into the $3$ ground-truth
-classes. Agreement across four independent representation levels rules
-out any single-layer artefact as the source of the result.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.88\linewidth]{figs/intuition_signature_stack.png}
+  \caption{Four independent equivalence-detection layers (op-multiset,
+  Weisfeiler-Lehman, Markov-category string diagram, BSS + Perrone
+  semantic check) all recover the same $3$-class partition on
+  $10$ law-zoo domains. ARI $= 1.00$ under every layer. Agreement
+  across independent representation levels rules out a single-layer
+  artefact as the source of the result.}
+  \label{fig:sig-stack}
+\end{figure}
+
+This section develops four complementary equivalence tests
+(Figure~\ref{fig:sig-stack}), each of which partitions the
+$10$-domain law-zoo into the $3$ ground-truth classes. Agreement
+across four independent representation levels rules out any
+single-layer artefact as the source of the result.
 
 \subsection{Op-multiset signature}
 \label{sec:opmultiset}
@@ -503,12 +516,27 @@ present the ARI $= 1.00$ as evidence of learning.
 \section{Structural transfer protocol}
 \label{sec:transfer}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.55\linewidth]{figs/intuition_transfer_protocol.png}
+  \caption{Transfer protocol (Algorithm~\ref{alg:transfer}).
+  \emph{Step 1}: fit source with rich data, extract posterior
+  log-standard-deviation $\sigma_{\log}^{S}$ (narrow). \emph{Step 2}:
+  the signature gate refuses transfer if $\mathrm{sig}(T) \neq
+  \mathrm{sig}(S)$. \emph{Step 3}: target prior becomes a LogNormal
+  with the source's $\sigma_{\log}^{S}$ but the target's own mean
+  (numerical scale preserved). \emph{Step 4}: fit NUTS on the few-shot
+  target data; held-out MSE drops from the uninformed $0.359$
+  cold-start to $0.011$ under transfer ($+97\%$ reduction on this pair).}
+  \label{fig:transfer-protocol}
+\end{figure}
+
 Given a data-rich source domain $S$ and a data-poor target $T$ with
 $\mathrm{sig}(T) = \mathrm{sig}(S)$, we transfer
 \emph{class-level precision} --- the source's posterior
 log-standard-deviations --- as a prior for the target. Prior
 \emph{means} stay at the target's domain-specific defaults,
-preserving numerical scale.
+preserving numerical scale (Figure~\ref{fig:transfer-protocol}).
 
 \begin{algorithm}[h]
 \caption{Structural transfer with signature gate}
