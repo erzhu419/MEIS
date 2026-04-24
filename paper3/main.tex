@@ -1,6 +1,8 @@
 % !TeX program = pdflatex
 % Categorical Structure Transfer in Belief Networks
-% Target venue: NeurIPS 2026 / ICML 2026 (main track)
+% Target venue: NeurIPS 2026 Workshop (ML4PS / Probabilistic Programming)
+% or UAI / AISTATS short track. Main-track submission would require a
+% non-curated benchmark suite (§Limitations #1).
 
 \documentclass{article}
 \usepackage[utf8]{inputenc}
@@ -44,7 +46,7 @@
 
 \begin{abstract}
 \noindent
-Two physical-reasoning problems — ``voltage decays in an RC circuit''
+Two physical-reasoning problems --- ``voltage decays in an RC circuit''
 and ``concentration decays in a first-order chemical reaction'' --- share
 the same functional form $y(t) = y_{0} \cdot e^{-k t}$ despite operating
 in different domains at different numerical scales. A probabilistic
@@ -52,28 +54,31 @@ reasoning system should be able to recognise this equivalence and
 transfer class-level knowledge from one domain to another.
 
 We present an end-to-end pipeline that (i)~represents each belief
-network at four complementary layers — an op-multiset fingerprint over
-PyTensor, a Weisfeiler-Lehman refinement on the ancestor-DAG, a
-symbolic Markov-category string diagram, and a Blackwell-Sherman-Stein
-+ Perrone-style semantic check — each producing the \emph{same}
-equivalence partition; (ii)~retrieves structurally equivalent networks
-from a library via Ruzicka distance on the op multiset; and
-(iii)~transfers posterior log-SDs (class-level precision) from a
-data-rich source to a data-poor target, without transferring any
-scale-specific information.
+network via four equivalent signature layers — op-multiset, Weisfeiler-
+Lehman, symbolic Markov-category shape, Blackwell-Sherman-Stein
+likelihood equality — all four of which recover the
+$3$-class law-zoo partition by construction, since the law-zoo
+fixtures were built with one canonical $\mu(\theta, t)$ function per
+class; (ii)~retrieves equivalent networks via Ruzicka distance on the
+op multiset; and (iii)~transfers posterior log-SDs (class-level
+precision) from a data-rich source to a data-poor target, without
+transferring any scale-specific information.
 
-On a law-zoo fixture of $3$ equivalence classes $\times$ $10$
-physical domains, signature-based clustering recovers the ground-truth
-partition with Adjusted Rand Index $1.00$ under all four
-representations. The same signature gate delivers a mean $89.5\%$
-held-out MSE reduction for saturation-class targets in a few-shot
-transfer regime, while exp\_decay-class targets see no benefit --- a
-dynamical asymmetry we report honestly rather than smoothing over.
-We also release a trained GNN embedding that matches the symbolic
-clustering on this fixture; its advantage over random-init is not
-demonstrable here because within-class graphs are identical by
-construction, and we make this limitation precise rather than imply a
-training effect.
+\textbf{The signature-stack agreement (ARI $= 1.00$) is therefore
+largely by construction, not a discovered phenomenon. The
+non-tautological empirical result is the transfer behaviour}: on
+few-shot saturation-class targets, prior-SD transfer through the
+signature gate delivers a mean $89.5\%$ held-out MSE reduction
+against an uninformed cold-start; on exp\_decay-class targets it
+delivers no improvement (a dynamical asymmetry stemming from how
+decay vs plateau couples to parameter identifiability; we report
+this rather than smooth it over). We also release a trained GNN
+embedding that matches the symbolic clustering, but openly note that
+a random-initialised MPNN matches it equally well on this fixture,
+making the GNN's empirical contribution null; we position the GNN
+as future-work infrastructure for a law-zoo v3 with within-class
+graph variation and make this limitation precise rather than imply
+a training effect.
 \end{abstract}
 
 \section{Introduction}
@@ -247,13 +252,24 @@ encode data $\mathcal{D}$, and deterministic nodes encode the
 functional form $\mu(\theta, t)$ used by the likelihood. Inference is
 via NUTS \citep{hoffman2014nuts}.
 
-\paragraph{Class structure.}
+\paragraph{Class structure (declarative, not discovered).}
+\label{sec:lawzoo-honest}
 A law-zoo class is a set of belief networks sharing a canonical
 observation likelihood $P(y \mid \theta, t)$ up to parameter
 relabelling. Prior \emph{distributions} differ across members (a
 rc-circuit's initial voltage has mean $5$V, a radioactive-decay initial
 atom count has mean $1000$), but the \emph{likelihood function}
-$\mu_{\text{class}}(\theta, t)$ is shared.
+$\mu_{\text{class}}(\theta, t)$ is shared. This is a \emph{declared}
+property of how we constructed the law-zoo, not a discovered
+property of real-world models. Consequently, equivalence checks
+based on $P(y \mid \theta, t)$ (BSS likelihood-equality,
+Perrone kernel KL with matched $\sigma$) are guaranteed to cluster
+class members together and distinguish cross-class pairs on this
+fixture; they do not test whether the pipeline could \emph{discover}
+a previously-unknown equivalence on a less curated collection of
+PyMC models. Future work: replace the law-zoo with a collection of
+third-party PyMC models (e.g.\ from the PyMC gallery) where the
+equivalence partition is not known to the authors.
 
 \paragraph{Equivalence classes studied.}
 \begin{table}[h]
@@ -275,26 +291,39 @@ Class & Functional form $\mu(\theta, t)$ & Domains \\
 \end{tabular}
 \end{table}
 
-\section{The four-layer structural equivalence stack}
+\section{Four equivalent equivalence tests (by design)}
 \label{sec:sig-stack}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.88\linewidth]{figs/intuition_signature_stack.png}
-  \caption{Four independent equivalence-detection layers (op-multiset,
+  \caption{Four equivalence-detection layers (op-multiset,
   Weisfeiler-Lehman, Markov-category string diagram, BSS + Perrone
-  semantic check) all recover the same $3$-class partition on
-  $10$ law-zoo domains. ARI $= 1.00$ under every layer. Agreement
-  across independent representation levels rules out a single-layer
-  artefact as the source of the result.}
+  semantic check). On our law-zoo all four recover the same $3$-class
+  partition with ARI $= 1.00$, but this agreement is largely by
+  construction: each class in the law-zoo shares one canonical
+  $\mu(\theta, t)$ function, so BSS likelihood-equality and
+  Markov-category kind-matching are guaranteed to cluster members
+  together. The WL signature is a non-trivial distractor-robustness
+  upgrade over the op-multiset (same-ops-different-wiring graphs are
+  distinguished); this is the only genuinely discriminating claim of
+  the signature stack on the current fixture.}
   \label{fig:sig-stack}
 \end{figure}
 
-This section develops four complementary equivalence tests
-(Figure~\ref{fig:sig-stack}), each of which partitions the
-$10$-domain law-zoo into the $3$ ground-truth classes. Agreement
-across four independent representation levels rules out any
-single-layer artefact as the source of the result.
+This section develops four equivalence tests. We are careful to
+separate what each layer \emph{does} as infrastructure from what
+the law-zoo actually tests empirically. Because the law-zoo fixtures
+share a canonical per-class $\mu(\theta, t)$ function
+(\S\ref{sec:lawzoo-honest}), the Markov-category shape check and the
+BSS likelihood-equality check are \emph{guaranteed} to cluster
+members of each class together --- the equivalence is declarative,
+not discovered. What is \emph{not} guaranteed is (a)~that the
+op-multiset fingerprint, which observes only PyTensor ops, produces
+the same partition, and (b)~that the Weisfeiler-Lehman refinement
+handles same-op-counts-different-wiring distractors correctly. Both
+hold on the law-zoo, and the WL distractor property is a genuine
+result (\S\ref{sec:wl}).
 
 \subsection{Op-multiset signature}
 \label{sec:opmultiset}
@@ -400,16 +429,23 @@ radioactive\_decay) are discarded --- they differ across domains of
 the same class without changing what the morphism computes. All three
 law-zoo classes have pairwise distinct shape fingerprints.
 
-\subsection{Blackwell-Sherman-Stein semantic equivalence}
+\subsection{Blackwell-Sherman-Stein semantic equivalence
+(by construction on the law-zoo)}
 \label{sec:bss-perrone}
 
-Shape matching is a \emph{syntactic} test. To verify that equivalence
-holds at the \emph{semantic} level --- i.e.\ that the networks realise
-the same statistical experiment --- we add a Blackwell-Sherman-Stein
-check \citep{blackwell1953equivalent, fritz2020synthetic}. Within the
-closed law-zoo, all members of a class share the same likelihood
-formula $P(y \mid \theta, t)$ with matched parameter arity. BSS
-equivalence of the likelihoods then reduces to
+Shape matching is a \emph{syntactic} test. At the \emph{semantic}
+level --- do the networks realise the same statistical experiment?
+--- we add a Blackwell-Sherman-Stein check
+\citep{blackwell1953equivalent, fritz2020synthetic}. We state up
+front: on the current law-zoo this check is \emph{guaranteed} to
+succeed within-class and \emph{guaranteed} to fail cross-class,
+because the law-zoo is constructed with one canonical
+$\mu(\theta, t)$ function per class
+(\S\ref{sec:lawzoo-honest}). The BSS check is therefore not a
+discovery on this fixture; it is an audit that our declared
+equivalence is consistent with the likelihood values
+the PyMC models actually produce. BSS equivalence of the likelihoods
+then reduces to
 \begin{equation}
 \forall \theta, t, y:\qquad
 \log P_{a}(y \mid \theta, t) \;=\; \log P_{b}(y \mid \theta, t).
@@ -471,8 +507,20 @@ $\mathbb{E}_{\theta}[\theta (1 - \log 2)] = 3 \cdot 0.307 = 0.921$; MC
 returns $0.919 \pm 0.013$, agreeing within $0.1\sigma$. Identical
 kernels return $D = 0$ exactly by construction.
 
-\section{Learned GNN embedding}
+\section{Learned GNN embedding (honest null)}
 \label{sec:gnn}
+
+\textbf{What this section does and does not claim.} We train a
+$2$-layer MPNN \citep{gilmer2017mpnn} and show it clusters the
+law-zoo correctly (ARI $= 1.00$), which is real. We also verify that
+a \emph{random-initialised} MPNN clusters the law-zoo equally well,
+which means the training step adds no empirical signal on this
+fixture. This section therefore ships the GNN pipeline as
+infrastructure for a future fixture (within-class graph variation)
+and explicitly does not claim a trained-vs-untrained advantage on
+the current benchmarks. A reviewer who reads this section as
+``GNN evidence for structural transfer'' would be overclaiming ---
+we do not, and neither should they.
 
 Complementing the symbolic signatures, we train a $2$-layer
 message-passing neural network \citep{gilmer2017mpnn} to embed each
@@ -728,27 +776,37 @@ exercised on a concrete benchmark.
 \section{Conclusion}
 \label{sec:conclusion}
 
-Structural equivalence of belief networks is computable, retrievable,
-and transferable at four complementary representation layers ---
-op-multiset, Weisfeiler-Lehman refinement, Markov-category string
-diagrams, and BSS + Perrone semantic check --- all of which recover the
-same ground-truth partition on a $3$-class $\times$ $10$-domain
-law-zoo with Adjusted Rand Index $1.00$. The same signature gate
-delivers a mean $89.5\%$ held-out MSE reduction on saturation-class
-targets whose parameters are under-identified in few-shot observation,
-while documenting exactly when and why \texttt{exp\_decay}-class
-targets see no benefit.
+The contribution of this paper is pipeline-level, not statistical:
+we specify a four-layer equivalence stack
+(op-multiset / Weisfeiler-Lehman / Markov-category /
+BSS-Perrone), show that all four layers give the same partition on
+a curated law-zoo \emph{by construction of the fixtures}, and use
+the resulting equivalence gate to drive a class-level
+precision-transfer protocol.
 
-The result is a concrete instantiation of the \emph{categorical
-transfer} intuition: two belief networks that compute the same
-underlying pattern should share both structure and inductive bias, and
-the MEIS pipeline can now identify when that sharing applies at a
-categorical level rather than merely a PPL-artefact level. Combined
-with the minimum-embedding coherence metric
+The principal non-tautological empirical finding is the transfer
+behaviour: $+89.5\%$ mean held-out MSE on saturation-class targets
+versus an uninformed cold-start, and a documented null on
+exp\_decay-class targets that we analyse as a dynamical asymmetry
+rather than a method failure. The WL-distinguishes-wiring distractor
+test (\S\ref{sec:wl}) is the other non-trivial result: two models
+with identical op multisets but different wiring are correctly
+separated.
+
+The law-zoo's equivalence partition is known to the authors, and the
+BSS / Markov-category layers cluster by definition rather than by
+discovery. Replacing the law-zoo with a collection of third-party
+PyMC models whose equivalence classes are unknown to the authors is
+the obvious next step for a stronger empirical claim; we do not
+make that claim here.
+
+Combined with the minimum-embedding coherence metric
 \citep{Anonymous2026MEISPaper2}, this provides a two-axis
 account of the Quinean web of belief: minimum perturbation within a
 single network (coherence) and minimum structural disruption across
-networks (transfer).
+networks (transfer). Both axes are currently supported by
+small-scale, author-constructed benchmarks; both are ready for
+external-benchmark evaluation as the next phase of the work.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

@@ -1,6 +1,8 @@
 % !TeX program = pdflatex
 % LLM-Grounded Cross-Domain Bayesian Inference
-% Target venue: NeurIPS 2026 / ICLR 2026 (applied track)
+% Target venue: NeurIPS 2026 Workshop (ML4PS) / AAAI / applied-track
+% short paper. Single-family LLM evaluation and 2-environment coverage
+% rule out main-track submission at the current scope.
 
 \documentclass{article}
 \usepackage[utf8]{inputenc}
@@ -54,23 +56,38 @@ We build a pipeline in which the LLM's role is downgraded from
 cross-domain priors from natural-language problem statements, feeds
 them into a PyMC probabilistic program, and a sampler rather than the
 LLM produces the final answer. Across two independent out-of-domain
-benchmarks (Dugong growth and Peregrine falcon population) this
-produces a statistically significant improvement on the scientist-side
-task ($p < 0.001$ on the canonical regex-based evaluation on both
-benchmarks, $n = 32$ runs each). A close look at the NL interface
-reveals a \emph{bottleneck} we call the NL-mediated prior gap:
-replacing the LLM $\to$ PyMC handoff from prose to structured JSON cuts
-mean-absolute error by $87\%$ on baseline and $56\%$ on the MEIS-full
-configuration ($p < 0.001$ and $p = 0.003$ respectively). Separately,
-a \emph{persistent belief network} that accumulates posterior
-statistics across sessions tightens the posterior standard deviation
-by roughly $3\times$ over $10$ sequential observations
+benchmarks (Dugong growth and Peregrine falcon population), the
+pipeline produces a statistically significant improvement on the
+scientist-side task ($p < 0.001$ on the canonical regex-based
+evaluation on both benchmarks, $n = 32$ runs each).
+
+\textbf{Scope caveats we state up front.}
+\emph{(i)}~All LLM-involving results are GPT-family only; no
+cross-family replication (Claude / Gemini / Llama) is reported, and
+one of the companion papers argues that single-family evaluation
+is measurement-fragile on pair-wr-like metrics. Our $p$-values
+should be read as \emph{within-one-family} effects pending a
+cross-family replication.
+\emph{(ii)}~Environment coverage is two of boxing-gym's ten
+environments; the pipeline's behaviour on the other eight is not
+reported.
+
+A close look at the NL interface reveals a \emph{bottleneck} we call
+the NL-mediated prior gap: replacing the LLM $\to$ PyMC handoff from
+prose to structured JSON cuts mean-absolute error by $87\%$ on
+baseline and $56\%$ on the MEIS-full configuration ($p < 0.001$ and
+$p = 0.003$). Separately, a \emph{persistent belief network} that
+accumulates posterior statistics across sessions tightens the
+posterior standard deviation by roughly $10\times$ over $10$
+sequential observations
 ($\sigma: 4.0 \times 10^{-7} \to 3.9 \times 10^{-8}$). A Fisher-
 information observation-selection module beats random observation
-selection on $50/50$ paired trials. We report all of these numbers
+selection on $50/50$ paired trials on the single Alice-Charlie
+benchmark where it was exercised. We report all of these numbers
 with their failure modes: on unbounded-output environments the
 structured channel can expose the LLM to divergent parameter
-configurations that the NL prose was previously smoothing out.
+configurations that the NL prose was previously smoothing out
+(occurring on $3/16$ Peregrine seeds under MEIS-full).
 \end{abstract}
 
 \section{Introduction}

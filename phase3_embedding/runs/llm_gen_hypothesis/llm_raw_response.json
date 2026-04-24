@@ -1,0 +1,60 @@
+{
+  "hypotheses": [
+    {
+      "name": "H_height_makes_heavier",
+      "summary": "Alice is slightly taller than Charlie, so with similar body density she is heavier and presses deeper into the sand.",
+      "kind": "in-vocab",
+      "new_latents": [],
+      "rationale": "This uses only the given variables height, density, weight, pressure, and footprint depth; it is a standard causal explanation within the problem's vocabulary."
+    },
+    {
+      "name": "H_smaller_contact_area",
+      "summary": "Alice has a smaller effective foot contact area than Charlie, so the same kind of body weight creates higher pressure and a deeper footprint.",
+      "kind": "in-vocab",
+      "new_latents": [],
+      "rationale": "This stays entirely within the provided causal variables by using foot area and pressure to explain the depth difference."
+    },
+    {
+      "name": "H_density_bump",
+      "summary": "Alice's body density is a bit higher than Charlie's, making her weight larger at similar height and leading to a deeper footprint.",
+      "kind": "in-vocab",
+      "new_latents": [],
+      "rationale": "This relies only on density, height, and pressure, all of which are already in the problem statement."
+    },
+    {
+      "name": "H_astro_luck",
+      "summary": "Alice's footprint is deeper because her horoscope is favorable today.",
+      "kind": "orphan",
+      "new_latents": ["horoscope"],
+      "rationale": "Horoscope has no causal path to body weight, foot pressure, or sand indentation, so it is an incoherent orphan variable."
+    },
+    {
+      "name": "H_color_effect",
+      "summary": "Alice's favorite color is red, and that somehow makes her footprint deeper.",
+      "kind": "orphan",
+      "new_latents": ["favorite_color"],
+      "rationale": "Favorite color is unrelated to the physical mechanism of footprint depth, so it is an orphan explanation."
+    },
+    {
+      "name": "H_birthmonth_spell",
+      "summary": "Alice was born in March, which magically causes her footprint to be deeper than Charlie's.",
+      "kind": "orphan",
+      "new_latents": ["birth_month"],
+      "rationale": "Birth month has no causal connection to pressure on sand in this setting, making it an incoherent orphan hypothesis."
+    },
+    {
+      "name": "H_alice_shorter",
+      "summary": "Alice is actually shorter than Charlie, contrary to the stated heights.",
+      "kind": "contradictory",
+      "new_latents": [],
+      "rationale": "This directly contradicts the given observation that Alice is about 170 cm while Charlie is about 175 cm."
+    },
+    {
+      "name": "H_reverse_footprint",
+      "summary": "Charlie, not Alice, left the deeper footprint in the sand.",
+      "kind": "contradictory",
+      "new_latents": [],
+      "rationale": "This contradicts the stated observation that Alice's footprint is 0.15 cm deeper than Charlie's."
+    }
+  ]
+}
