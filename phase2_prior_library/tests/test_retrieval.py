@@ -11,28 +11,42 @@ from phase2_prior_library.retrieval import PriorLibrary
 
 
 def test_load():
+    """Load correctness: every JSON in DEFAULT_FILES contributes its entries
+    exactly once, no duplicate ids, every entry has the required schema.
+
+    Computes the expected count dynamically from the JSON files rather than
+    hardcoding a magic number — so the test self-updates when the library
+    grows. (Bug caught end of Phase 2: stale `== 14` assertion silently
+    hid two library expansions.)
+    """
+    import json as _json
+    from phase2_prior_library.retrieval import DEFAULT_FILES, _LIB_DIR
+
+    per_file: list[tuple[str, int]] = []
+    expected_total = 0
+    for fname in DEFAULT_FILES:
+        entries = _json.loads((_LIB_DIR / fname).read_text())
+        assert isinstance(entries, list), f"{fname} must be a JSON list"
+        per_file.append((fname, len(entries)))
+        expected_total += len(entries)
+
     lib = PriorLibrary.load_default()
-    # Library has grown across phases:
-    #   human_body.json            : 10 entries (Step 2)
-    #   growth_curves.json         :  4 entries (Step 3.5 dugongs pivot)
-    #   dynamics_multivariate.json :  3 entries (Step 3.10 lotka_volterra)
-    #   count_regression.json      :  3 entries (P2.1 peregrines)
-    #                     total    : 20
-    assert len(lib.entries) == 20, f"expected 20 entries, got {len(lib.entries)}"
-    domains = {e.get("domain") for e in lib.entries}
-    # Phase 1 domains
-    assert "human_body" in domains
-    assert "classical_mechanics" in domains
-    assert "soil_mechanics" in domains
-    assert "biology" in domains
-    assert "dynamics" in domains
-    # Phase 2 additions
-    assert "population_dynamics" in domains
-    assert "count_regression" in domains
-    # schema check
+    assert len(lib.entries) == expected_total, \
+        f"expected {expected_total} entries (sum over {DEFAULT_FILES}), got {len(lib.entries)}"
+
+    # Every entry has the required schema
     for e in lib.entries:
-        assert "id" in e and "keywords" in e and "statement" in e
-    print(f"[PASS] loaded {len(lib.entries)} entries across domains: {sorted(domains)}")
+        assert "id" in e and "keywords" in e and "statement" in e, \
+            f"schema violation in entry: {e.get('id', '<no id>')}"
+
+    # IDs are globally unique
+    ids = [e["id"] for e in lib.entries]
+    assert len(set(ids)) == len(ids), \
+        f"duplicate ids: {[i for i in ids if ids.count(i) > 1]}"
+
+    domains = sorted({e.get("domain") for e in lib.entries})
+    breakdown = ", ".join(f"{f}={n}" for f, n in per_file)
+    print(f"[PASS] loaded {len(lib.entries)} entries ({breakdown}) across domains {domains}")
 
 
 def test_retrieval_alice_charlie_critical_path():
