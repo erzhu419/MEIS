@@ -83,6 +83,17 @@ def _decay(t: np.ndarray, y0: float, k: float) -> np.ndarray:
     return y0 * np.exp(-k * t)
 
 
+# Canonical class mu-function for P4.8 BSS / Perrone KL checks.
+# Parameter order MUST match LATENT_ROLES' scale/rate ordering across
+# all domains in the class (i.e. (scale, rate) tuple).
+def class_mu(theta: tuple, t: np.ndarray) -> np.ndarray:
+    y0, k = theta
+    return _decay(t, y0, k)
+
+
+CLASS_PARAM_NAMES = ("y0", "k")
+
+
 def _make_domain_module(spec: DomainSpec):
     """Factory — returns a namespace with build_model / simulate / true_params
     bound to this DomainSpec."""

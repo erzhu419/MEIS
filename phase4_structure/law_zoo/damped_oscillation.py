@@ -93,6 +93,14 @@ def _damped(t: np.ndarray, A: float, gamma: float, omega: float, phi: float) -> 
     return A * np.exp(-gamma * t) * np.cos(omega * t + phi)
 
 
+def class_mu(theta: tuple, t: np.ndarray) -> np.ndarray:
+    A, gamma, omega, phi = theta
+    return _damped(t, A, gamma, omega, phi)
+
+
+CLASS_PARAM_NAMES = ("A", "gamma", "omega", "phi")
+
+
 def _make_domain_module(spec: DomainSpec):
     def simulate(t: np.ndarray, rng: np.random.Generator | None = None) -> np.ndarray:
         rng = rng or np.random.default_rng(0)

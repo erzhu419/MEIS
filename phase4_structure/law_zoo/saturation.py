@@ -72,6 +72,14 @@ def _saturate(t: np.ndarray, ymax: float, k: float) -> np.ndarray:
     return ymax * (1.0 - np.exp(-k * t))
 
 
+def class_mu(theta: tuple, t: np.ndarray) -> np.ndarray:
+    ymax, k = theta
+    return _saturate(t, ymax, k)
+
+
+CLASS_PARAM_NAMES = ("ymax", "k")
+
+
 def _make_domain_module(spec: DomainSpec):
     def simulate(t: np.ndarray, rng: np.random.Generator | None = None) -> np.ndarray:
         rng = rng or np.random.default_rng(0)
