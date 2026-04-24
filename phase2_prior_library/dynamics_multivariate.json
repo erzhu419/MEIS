@@ -1,0 +1,50 @@
+[
+  {
+    "id": "lotka_volterra_predator_prey",
+    "domain": "population_dynamics",
+    "keywords": ["predator", "prey", "population", "oscillation", "dynamics", "lotka", "volterra", "ecology"],
+    "vars_involved": ["prey", "predator", "time", "alpha", "beta", "gamma", "delta"],
+    "statement": "Coupled predator-prey populations follow the Lotka-Volterra equations: dx/dt = alpha*x - beta*x*y (prey growth minus predation) and dy/dt = delta*x*y - gamma*y (predator growth from predation minus natural death). Under stable parameters both populations oscillate around fixed points x* = gamma/delta, y* = alpha/beta, with the predator lagging the prey by roughly a quarter-period. Populations are strictly positive; never go negative. The system conserves an energy-like quantity so orbits are periodic (not damped).",
+    "formal": {
+      "ode": ["dx/dt = alpha * x - beta * x * y",
+              "dy/dt = delta * x * y - gamma * y"],
+      "parameters_hint": {
+        "alpha": "prey intrinsic growth rate, typical 0.5-1.5",
+        "beta":  "predation rate coefficient, typical 0.02-0.1",
+        "gamma": "predator natural death rate, typical 0.5-1.5",
+        "delta": "predator growth-from-prey rate, typical 0.01-0.05"
+      },
+      "fixed_point": "(x*, y*) = (gamma/delta, alpha/beta)",
+      "period": "~ 2*pi / sqrt(alpha * gamma)"
+    },
+    "source": "Lotka (1925); Volterra (1926)",
+    "confidence": "high (standard ecology model)",
+    "cross_domain_isomorph": "Analogous to coupled oscillators, Hamiltonian orbits, chemical reaction rates (autocatalytic loops)."
+  },
+  {
+    "id": "periodic_oscillation_shape",
+    "domain": "dynamics",
+    "keywords": ["oscillation", "periodic", "cycle", "period", "amplitude", "phase"],
+    "vars_involved": ["y", "t", "period", "amplitude"],
+    "statement": "A periodic signal has a shape Y(t) = mean + amplitude · f((t - t_0) / period) where f is a 1-periodic waveform. For nearly-sinusoidal oscillations (small-amplitude Lotka-Volterra, harmonic oscillator, etc.), f ≈ sin or cos. Two coupled oscillators with a quarter-period phase shift satisfy: peaks of one coincide with the rising zero-crossing of the other.",
+    "formal": {
+      "sinusoidal_approx": "Y(t) ≈ mean + amp * cos(2π * (t - t_0) / period)",
+      "quarter_phase": "if Y2 lags Y1 by T/4: Y2(t) = Y1(t - T/4)"
+    },
+    "source": "harmonic analysis; standard textbook",
+    "confidence": "high for linearized oscillators"
+  },
+  {
+    "id": "ode_two_variable_coupling",
+    "domain": "dynamics",
+    "keywords": ["ode", "coupled", "differential equation", "two variable", "system"],
+    "vars_involved": ["x", "y", "t"],
+    "statement": "A 2-variable coupled ODE dx/dt = f(x, y), dy/dt = g(x, y) with smooth f, g either converges to a stable fixed point, diverges, or cycles (limit-cycle or center). Trajectories can be visualised as curves in the (x, y) phase plane. Populations or concentrations in biology/chemistry often sit on stable limit cycles giving periodic time-series; both variables oscillate with a fixed phase relationship determined by the Jacobian at the fixed point.",
+    "formal": {
+      "general_form": ["dx/dt = f(x, y)", "dy/dt = g(x, y)"],
+      "behaviors": ["stable fixed point", "limit cycle (periodic)", "divergence"]
+    },
+    "source": "dynamical systems theory",
+    "confidence": "high (qualitative classification is exact)"
+  }
+]

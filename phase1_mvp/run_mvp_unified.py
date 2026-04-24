@@ -30,6 +30,7 @@ except ImportError:
 
 from boxing_gym.agents.agent import LMExperimenter
 from boxing_gym.envs.dugongs import Dugongs, DirectGoalNaive as DugongsDirectGoalNaive
+from boxing_gym.envs.lotka_volterra import LotkaVolterra, DirectGoalNaive as LotkaVolterraDirectGoalNaive
 
 from phase1_mvp.envs.alice_charlie import AliceCharlie, DirectGoalNaive as AliceCharlieDirectGoalNaive
 from phase1_mvp.agents.prior_injecting_experimenter import (
@@ -44,13 +45,15 @@ RUNS_ROOT.mkdir(exist_ok=True)
 
 # Per-env retrieval queries — should land the critical-path prior in top-3.
 PRIOR_QUERIES = {
-    "alice_charlie": "predict weight given height",
-    "dugongs":       "predict length given age",
+    "alice_charlie":   "predict weight given height",
+    "dugongs":         "predict length given age",
+    "lotka_volterra":  "predict predator prey population oscillation time ODE",
 }
 
 ENV_REGISTRY = {
-    "alice_charlie": (AliceCharlie, AliceCharlieDirectGoalNaive),
-    "dugongs":       (Dugongs,      DugongsDirectGoalNaive),
+    "alice_charlie":  (AliceCharlie,   AliceCharlieDirectGoalNaive),
+    "dugongs":        (Dugongs,        DugongsDirectGoalNaive),
+    "lotka_volterra": (LotkaVolterra,  LotkaVolterraDirectGoalNaive),
 }
 
 # Plausible output ranges per env. Predictions outside this range trigger

@@ -72,6 +72,33 @@ FORM_PATTERNS = {
             r"α\s*-\s*β",
         ],
     },
+    "lotka_volterra": {
+        "predator_prey_concept": [
+            r"predator",
+            r"\bprey\b",
+            r"lotka",
+            r"volterra",
+            r"predation",
+            r"hunt(?:ing|er)?",
+        ],
+        "oscillation_shape": [
+            r"oscillat",
+            r"periodic",
+            r"\bcycle\b",
+            r"limit\s*cycle",
+            r"sinusoidal",
+            r"rise\s+and\s+fall",
+            r"peaks?\s+and\s+troughs?",
+        ],
+        "ode_form": [
+            r"\bODE\b",
+            r"differential\s+equation",
+            r"d[xy]\s*/\s*dt",
+            r"\balpha\b.*\bbeta\b",
+            r"\bgamma\b.*\bdelta\b",
+            r"coupled\s+(?:system|ODE)",
+        ],
+    },
 }
 
 
