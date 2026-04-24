@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import time
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +39,7 @@ from phase1_mvp.agents.prior_injecting_experimenter import (
     PriorInjectingExperimenter, DEFAULT_PRIOR_HEADER,
 )
 from phase2_prior_library.retrieval import PriorLibrary
+from phase3_embedding.belief_store import BeliefStore, Evidence
 
 
 MAX_TRIES = 3
@@ -69,6 +71,24 @@ SANITY_RANGES = {
     "peregrines":    (0.0, 5000.0),   # integer bird count; very wide to only
                                       # catch decimal-glitches (158 instead
                                       # of 1.58 style) without false retries
+}
+
+
+# Env → BeliefStore wiring. Only envs with a SINGLE conjugate-Gaussian latent
+# node in the library are currently supported for persistence (P2.3 commit 4).
+# Multi-parameter envs (dugongs 3 params; peregrines 4; LV coupled ODE) need
+# MCMC updates in the store, which lands in a later commit.
+ENV_TO_LATENT = {
+    "alice_charlie": {
+        "latent_node_id":      "weight_from_height_cube_law::theta",
+        "covariate_transform": lambda h_cm: float(h_cm) ** 3,
+        "obs_sigma":           2.0,
+        "x_label":              "height_cm",
+        "y_label":              "weight_kg",
+    },
+    # dugongs / peregrines / lotka_volterra: NOT YET SUPPORTED.
+    # Wiring those requires kl_drift_mcmc.rank_hypotheses_mcmc to also
+    # drive add_evidence, which is P2.3 commit-5 scope.
 }
 
 # Per-env prompts to elicit a STRUCTURED model distillation from the scientist.
@@ -229,6 +249,7 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
             prior_k: int = 5,
             sanity_retry: bool = False,
             structured_channel: bool = False,
+            persist_belief_path: str | None = None,
             num_experiments: int = 10, num_evals: int = 10,
             com_limit: int = 200, include_prior: bool = True,
             temperature: float = 0.0, max_tokens: int = 512):
@@ -257,9 +278,30 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
 
     scientist.set_system_message(goal.get_system_message(include_prior))
 
+    # --- Optional persistent belief store (P2.3 commit 4) --------------------
+    # Load existing store or initialise from library. Only alice_charlie
+    # supports evidence accumulation right now (see ENV_TO_LATENT).
+    belief_store: BeliefStore | None = None
+    belief_cfg = ENV_TO_LATENT.get(env_name)
+    belief_prior_snapshot: dict | None = None
+    if persist_belief_path is not None:
+        bpath = Path(persist_belief_path)
+        if bpath.exists() and any(bpath.iterdir()):
+            belief_store = BeliefStore.load(bpath)
+        else:
+            belief_store = BeliefStore.from_library(library)
+        if belief_cfg is not None:
+            belief_prior_snapshot = {
+                "mu": float(belief_store.get_node(belief_cfg["latent_node_id"]).posterior.mu),
+                "sigma": float(belief_store.get_node(belief_cfg["latent_node_id"]).posterior.sigma),
+                "n_evidence_before_run": len(belief_store.evidence),
+            }
+
     # --- 10 observation rounds ---
     queries, observations, successes = [], [], []
     observation = None
+    obs_index = 0
+    run_stamp = int(time.time())
     for _ in range(num_experiments):
         observe = scientist.generate_actions(observation)
         queries.append(observe)
@@ -275,6 +317,25 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
             successes.append(ok)
             if not ok:
                 tries += 1
+        # Record successful observations into the persistent store, if any.
+        if ok and belief_store is not None and belief_cfg is not None:
+            try:
+                x_parsed = float(str(observe).strip())
+            except (ValueError, TypeError):
+                x_parsed = None
+            if x_parsed is not None:
+                ev_id = f"{env_name}_s{seed}_{run_stamp}_obs_{obs_index}"
+                belief_store.add_evidence(
+                    Evidence(
+                        id=ev_id, kind="observation",
+                        target_nodes=[belief_cfg["latent_node_id"]],
+                        value=float(observation),
+                        x=belief_cfg["covariate_transform"](x_parsed),
+                        provenance=f"run_mvp_unified seed={seed} tag={config_tag(scientist_priors, novice_priors, echo_anchor, prior_k=prior_k, sanity_retry=sanity_retry, structured_channel=structured_channel)}",
+                    ),
+                    obs_sigma=belief_cfg["obs_sigma"],
+                )
+        obs_index += 1
 
     final_results = f"The final result is {observation}." if echo_anchor else ""
 
@@ -317,6 +378,17 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
 
     err_mean, err_std = goal.evaluate_predictions(predictions, gts)
 
+    # --- Persist belief store AFTER all observations ---
+    belief_posterior_snapshot: dict | None = None
+    if belief_store is not None and persist_belief_path is not None:
+        belief_store.save(persist_belief_path)
+        if belief_cfg is not None:
+            belief_posterior_snapshot = {
+                "mu": float(belief_store.get_node(belief_cfg["latent_node_id"]).posterior.mu),
+                "sigma": float(belief_store.get_node(belief_cfg["latent_node_id"]).posterior.sigma),
+                "n_evidence_after_run": len(belief_store.evidence),
+            }
+
     tag = config_tag(scientist_priors, novice_priors, echo_anchor,
                      prior_k=prior_k, sanity_retry=sanity_retry,
                      structured_channel=structured_channel)
@@ -344,6 +416,9 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
                 "sanity_retries_per_eval": sanity_retries,
                 "structured_channel": structured_channel,
                 "structured_model": structured_model,
+                "persist_belief_path": persist_belief_path,
+                "belief_prior_snapshot": belief_prior_snapshot,
+                "belief_posterior_snapshot": belief_posterior_snapshot,
                 "prior_query": prior_query,
                 "prior_k": prior_k,
                 "prior_header": DEFAULT_PRIOR_HEADER,
@@ -385,6 +460,11 @@ if __name__ == "__main__":
     p.add_argument("--structured-channel", action="store_true",
                    help="After NL explanation, ask scientist for a strict-JSON model; "
                         "feed that to the novice instead of the NL explanation.")
+    p.add_argument("--persist-belief", type=str, default=None, metavar="DIR",
+                   help="Accumulate scientist observations into a persistent belief "
+                        "store at DIR (auto-init from prior library if missing). "
+                        "Currently only alice_charlie is wired; other envs are "
+                        "silently skipped on the evidence side.")
     args = p.parse_args()
     run_mvp(
         seed=args.seed, model_name=args.model, env_name=args.env,
@@ -394,4 +474,5 @@ if __name__ == "__main__":
         prior_k=args.prior_k,
         sanity_retry=args.sanity_retry,
         structured_channel=args.structured_channel,
+        persist_belief_path=args.persist_belief,
     )
