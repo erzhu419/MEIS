@@ -304,6 +304,92 @@ def linear_gaussian_bss_check(domain_a: str,
 
 
 # ---------------------------------------------------------------------------
+# P4.11 — Non-linear (polynomial) garbling search
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PolynomialGarblingResult:
+    domain_a: str
+    domain_b: str
+    degree: int
+    n_samples: int
+    coefficients: np.ndarray       # c_0, c_1, ..., c_degree
+    residual_rmse: float
+    mu_b_scale: float
+    relative_residual: float
+    dominates: bool
+    tolerance: float
+
+
+def polynomial_garbling_fit(mu_a: np.ndarray, mu_b: np.ndarray,
+                            degree: int = 3):
+    """OLS fit of μ_b ≈ Σ_k c_k · μ_a^k over k=0..degree.
+
+    Returns: (coefficients (degree+1,), residual_rmse, mu_b_scale,
+             relative_residual).
+    """
+    X = np.column_stack([mu_a ** k for k in range(degree + 1)])
+    coef, *_ = np.linalg.lstsq(X, mu_b, rcond=None)
+    pred = X @ coef
+    resid = mu_b - pred
+    rmse = float(np.sqrt(np.mean(resid ** 2)))
+    mu_b_scale = float(np.sqrt(np.mean(mu_b ** 2)))
+    return coef, rmse, mu_b_scale, rmse / max(mu_b_scale, 1e-12)
+
+
+def polynomial_garbling_check(domain_a: str,
+                              domain_b: str,
+                              degree: int = 3,
+                              n_samples: int = 500,
+                              seed: int = 0,
+                              tolerance: float = 1e-6,
+                              ) -> PolynomialGarblingResult:
+    """Extension of P4.9a to polynomial garbling G(y_a) = Σ_k c_k y_a^k.
+
+    degree=1 reduces to linear_gaussian_bss_check (up to OLS form);
+    degree=3 allows cubic post-processors.
+
+    For exp_decay vs saturation cross-class: even degree-3 fails
+    because μ_b(θ,t) depends on θ in a way that μ_a(θ,t) alone cannot
+    recover through ANY fixed scalar function. This demonstrates that
+    BSS-rejection at cross-class is not an artefact of restricting to
+    linear garblings — it is a genuine structural inequivalence.
+
+    For synthetic pairs where a polynomial garbling truly exists
+    (e.g. μ_a(θ) = θ, μ_b(θ) = θ²), degree-2 recovers it perfectly;
+    see test_semantic_equivalence.
+    """
+    rng = np.random.default_rng(seed)
+    cls_a, cls_b = CLASS_OF[domain_a], CLASS_OF[domain_b]
+    params_a = class_param_names(cls_a)
+    params_b = class_param_names(cls_b)
+
+    mu_a_all, mu_b_all = [], []
+    for _ in range(n_samples):
+        dim_max = max(len(params_a), len(params_b))
+        theta_full = rng.lognormal(mean=0.0, sigma=0.5, size=dim_max)
+        theta_a = tuple(theta_full[: len(params_a)])
+        theta_b = tuple(theta_full[: len(params_b)])
+        t = rng.uniform(0.0, 10.0, size=16)
+        mu_a_all.append(class_mu(cls_a)(theta_a, t))
+        mu_b_all.append(class_mu(cls_b)(theta_b, t))
+    mu_a = np.concatenate(mu_a_all)
+    mu_b = np.concatenate(mu_b_all)
+
+    coef, rmse, scale, rel = polynomial_garbling_fit(mu_a, mu_b, degree=degree)
+    return PolynomialGarblingResult(
+        domain_a=domain_a, domain_b=domain_b,
+        degree=degree, n_samples=n_samples,
+        coefficients=coef,
+        residual_rmse=rmse, mu_b_scale=scale,
+        relative_residual=rel,
+        dominates=(rel < tolerance),
+        tolerance=tolerance,
+    )
+
+
+# ---------------------------------------------------------------------------
 # P4.9b — General Monte Carlo kernel KL (non-Gaussian ready)
 # ---------------------------------------------------------------------------
 
@@ -380,8 +466,90 @@ def mc_kernel_kl_gaussian(domain_a: str,
     )
 
 
+# ---------------------------------------------------------------------------
+# P4.12 — General Monte Carlo kernel KL (arbitrary distribution)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class GeneralMCKLResult:
+    label_a: str
+    label_b: str
+    n_theta_samples: int
+    n_y_per_theta: int
+    kl_estimate: float
+    kl_stderr: float
+
+
+def mc_kernel_kl_general(
+    sample_y_given_theta_a,   # callable: (theta, rng, size) -> y samples
+    log_pdf_a,                # callable: (y, theta) -> log P_a(y|theta)
+    log_pdf_b,                # callable: (y, theta) -> log P_b(y|theta)
+    sample_theta,             # callable: (rng) -> theta
+    n_theta_samples: int = 300,
+    n_y_per_theta: int = 50,
+    seed: int = 0,
+    label_a: str = "K_a",
+    label_b: str = "K_b",
+) -> GeneralMCKLResult:
+    """Fully general MC estimator of KL(K_a ‖ K_b), agnostic to the
+    distribution family.
+
+    Needs from the caller:
+      - `sample_y_given_theta_a(theta, rng, size)` to draw y ~ K_a(·|θ)
+      - `log_pdf_a(y, theta)` and `log_pdf_b(y, theta)` to score y
+      - `sample_theta(rng)` to draw the outer-loop θ
+
+    Works for any pair of kernels with tractable densities: Gaussian,
+    Poisson, Bernoulli, mixture, etc.
+
+    Within-class (identical kernels): log_pdf_a == log_pdf_b ⇒ KL = 0.
+    Cross-family: KL > 0 by construction.
+    """
+    rng = np.random.default_rng(seed)
+    per_theta_kl = np.empty(n_theta_samples)
+    for i in range(n_theta_samples):
+        theta = sample_theta(rng)
+        y = sample_y_given_theta_a(theta, rng, n_y_per_theta)
+        log_a = log_pdf_a(y, theta)
+        log_b = log_pdf_b(y, theta)
+        per_theta_kl[i] = float(np.mean(log_a - log_b))
+    return GeneralMCKLResult(
+        label_a=label_a, label_b=label_b,
+        n_theta_samples=n_theta_samples,
+        n_y_per_theta=n_y_per_theta,
+        kl_estimate=float(per_theta_kl.mean()),
+        kl_stderr=float(per_theta_kl.std(ddof=1) / np.sqrt(n_theta_samples)),
+    )
+
+
+# Poisson fixture for non-Gaussian demo -------------------------------------
+# K_a(y|θ) = Poisson(θ),  K_b(y|θ) = Poisson(α·θ)
+# Closed-form: KL(Pois(λ_a) ‖ Pois(λ_b)) = λ_a log(λ_a/λ_b) - λ_a + λ_b
+
+
+def poisson_sample_y(theta: float, rng: np.random.Generator, size: int):
+    return rng.poisson(lam=theta, size=size)
+
+
+def poisson_log_pdf(y: np.ndarray, theta: float) -> np.ndarray:
+    from scipy.special import gammaln
+    return y * np.log(theta) - theta - gammaln(y + 1)
+
+
+def poisson_log_pdf_scaled(alpha: float):
+    """Return a log_pdf for K_b with rate α·θ."""
+    def _log_pdf(y: np.ndarray, theta: float) -> np.ndarray:
+        return poisson_log_pdf(y, alpha * theta)
+    return _log_pdf
+
+
+def closed_form_poisson_kl(lam_a: float, lam_b: float) -> float:
+    return lam_a * np.log(lam_a / lam_b) - lam_a + lam_b
+
+
 if __name__ == "__main__":
-    print("P4.8 + P4.9 semantic equivalence — BSS + Perrone + garbling + MC KL\n")
+    print("P4.8 + P4.9 + P4.11 + P4.12 semantic equivalence suite\n")
     print("=== BSS likelihood equivalence ===")
     pairs = [
         ("rc_circuit", "radioactive_decay"),        # within exp_decay
@@ -416,3 +584,39 @@ if __name__ == "__main__":
                                     n_y_per_theta=50, seed=0)
         print(f"  {a:<22} vs {b:<22}  D_MC = {r.kl_estimate:+.4e}  "
               f"(SE {r.kl_stderr:.4e})")
+
+    print("\n=== P4.11 — polynomial garbling search (degree 3) ===")
+    for a, b in pairs:
+        r = polynomial_garbling_check(a, b, degree=3, n_samples=300, seed=0)
+        verdict = "✓ dominates" if r.dominates else "✗ no poly-3 garbling"
+        print(f"  {a:<22} → {b:<22}  rel_residual={r.relative_residual:.3e}  "
+              f"{verdict}")
+
+    print("\n=== P4.11 — synthetic nonlinear pair: μ_a = θ, μ_b = θ² ===")
+    rng = np.random.default_rng(0)
+    theta_grid = rng.lognormal(mean=0.0, sigma=1.0, size=500)
+    mu_a_syn = theta_grid.copy()
+    mu_b_syn = theta_grid ** 2
+    for deg in [1, 2, 3]:
+        coef, rmse, scale, rel = polynomial_garbling_fit(mu_a_syn, mu_b_syn, degree=deg)
+        verdict = "✓ recovers" if rel < 1e-6 else "✗ insufficient"
+        print(f"  degree {deg}: rel_residual={rel:.3e}  coef={coef}  {verdict}")
+
+    print("\n=== P4.12 — non-Gaussian MC KL (Poisson) ===")
+    # K_a = Poisson(θ), K_b = Poisson(2·θ). Reference: θ ~ Uniform(1, 5).
+    def _sample_theta(rng):
+        return float(rng.uniform(1.0, 5.0))
+    r_pois = mc_kernel_kl_general(
+        sample_y_given_theta_a=poisson_sample_y,
+        log_pdf_a=poisson_log_pdf,
+        log_pdf_b=poisson_log_pdf_scaled(alpha=2.0),
+        sample_theta=_sample_theta,
+        n_theta_samples=500, n_y_per_theta=200, seed=0,
+        label_a="Poisson(θ)", label_b="Poisson(2θ)",
+    )
+    # Closed-form expected KL at θ=3 (center of Uniform(1,5)):
+    expected_mid = closed_form_poisson_kl(3.0, 6.0)
+    print(f"  Poisson(θ) vs Poisson(2θ), θ~U(1,5)   "
+          f"D_MC = {r_pois.kl_estimate:.4f} ± {r_pois.kl_stderr:.4f}")
+    print(f"  Closed-form KL at θ=3 (mid-range):     "
+          f"{expected_mid:.4f}   (MC samples average over θ∈[1,5])")

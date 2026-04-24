@@ -34,6 +34,10 @@ from phase4_structure.semantic_equivalence import (
     bss_likelihood_equivalent, perrone_kernel_kl,
     gaussian_log_likelihood,
     linear_gaussian_bss_check, mc_kernel_kl_gaussian,
+    polynomial_garbling_fit, polynomial_garbling_check,
+    mc_kernel_kl_general,
+    poisson_sample_y, poisson_log_pdf, poisson_log_pdf_scaled,
+    closed_form_poisson_kl,
 )
 
 
@@ -199,8 +203,109 @@ def test_mc_kernel_kl_matches_closed_form_on_gaussian():
           f"Gaussian-ready MC machinery)")
 
 
+def test_polynomial_garbling_dominates_within_class():
+    """Within-class: polynomial of ANY degree ≥ 1 gives identity-like fit
+    (residual at machine epsilon). Check degrees 1, 2, 3."""
+    pairs = _within_class_pairs()
+    for a, b in pairs:
+        for degree in [1, 2, 3]:
+            r = polynomial_garbling_check(a, b, degree=degree,
+                                            n_samples=200, seed=0,
+                                            tolerance=1e-10)
+            assert r.dominates, \
+                f"{a} → {b} degree {degree}: rel_residual {r.relative_residual}"
+    print(f"[PASS] polynomial garbling degrees 1/2/3 all dominate within-class "
+          f"on {len(pairs)} pairs (residual ~1e-15)")
+
+
+def test_polynomial_garbling_rejects_cross_class_even_at_degree_3():
+    """Crucial: even cubic polynomial cannot find a fixed garbling
+    cross-class. BSS-rejection is not an artefact of linear restriction."""
+    pairs = _cross_class_pairs()
+    for a, b in pairs:
+        r = polynomial_garbling_check(a, b, degree=3,
+                                        n_samples=300, seed=0,
+                                        tolerance=1e-6)
+        assert not r.dominates, \
+            f"{a} → {b} unexpectedly dominates at degree 3: {r.relative_residual}"
+        assert r.relative_residual > 0.05, \
+            f"{a} → {b}: residual too small to reject: {r.relative_residual}"
+    print(f"[PASS] polynomial degree 3 REJECTS cross-class on {len(pairs)} pairs "
+          f"(rel_residual > 0.05) — confirms structural inequivalence, not "
+          f"linear-fit artefact")
+
+
+def test_polynomial_recovers_synthetic_quadratic_garbling():
+    """Synthetic demo: μ_b = μ_a² requires polynomial degree ≥ 2.
+    Linear fit must fail; degree-2 must recover with coef ≈ [0, 0, 1]."""
+    rng = np.random.default_rng(0)
+    theta = rng.lognormal(mean=0.0, sigma=1.0, size=500)
+    mu_a = theta.copy()
+    mu_b = theta ** 2
+
+    # Linear should fail
+    _, _, _, rel_lin = polynomial_garbling_fit(mu_a, mu_b, degree=1)
+    assert rel_lin > 0.1, f"linear unexpectedly succeeded: rel={rel_lin}"
+
+    # Degree-2 should recover exactly
+    coef2, _, _, rel_quad = polynomial_garbling_fit(mu_a, mu_b, degree=2)
+    assert rel_quad < 1e-10, f"quadratic residual {rel_quad} not ~0"
+    # coefficients should be [0, 0, 1] up to numerical precision
+    assert abs(coef2[0]) < 1e-10 and abs(coef2[1]) < 1e-10 and abs(coef2[2] - 1.0) < 1e-10, \
+        f"coef {coef2}"
+    print(f"[PASS] synthetic pair (μ_a=θ, μ_b=θ²): linear fails (rel={rel_lin:.3f}), "
+          f"degree-2 recovers perfectly (coef ≈ [0, 0, 1], rel={rel_quad:.1e})")
+
+
+def test_general_mc_kl_on_poisson_matches_closed_form():
+    """P4.12: non-Gaussian demo. K_a = Poisson(θ), K_b = Poisson(2θ),
+    θ ~ Uniform(1, 5). Closed-form E_θ[KL] = E[θ · (1 - log 2)]
+    = 3 · (1 - log 2) ≈ 0.9207. MC should match within 3σ."""
+    def _sample_theta(rng):
+        return float(rng.uniform(1.0, 5.0))
+
+    r = mc_kernel_kl_general(
+        sample_y_given_theta_a=poisson_sample_y,
+        log_pdf_a=poisson_log_pdf,
+        log_pdf_b=poisson_log_pdf_scaled(alpha=2.0),
+        sample_theta=_sample_theta,
+        n_theta_samples=800, n_y_per_theta=200, seed=0,
+        label_a="Poisson(θ)", label_b="Poisson(2θ)",
+    )
+    expected = 3.0 * (1.0 - np.log(2.0))
+    diff = abs(r.kl_estimate - expected)
+    assert diff < 3.0 * r.kl_stderr, \
+        (f"Poisson MC KL {r.kl_estimate:.4f} ± {r.kl_stderr:.4f} "
+         f"vs expected {expected:.4f}, diff {diff:.4f} > 3σ "
+         f"{3.0 * r.kl_stderr:.4f}")
+    print(f"[PASS] Poisson(θ)‖Poisson(2θ): MC D = {r.kl_estimate:.4f} "
+          f"± {r.kl_stderr:.4f}, analytical = {expected:.4f} "
+          f"(diff {diff:.4f}, within {diff/r.kl_stderr:.2f}σ) — "
+          f"non-Gaussian kernel KL works")
+
+
+def test_general_mc_kl_equals_zero_for_identical_kernels():
+    """Sanity: if K_a == K_b, MC estimator should return ~0 (exactly 0
+    up to finite-sample noise)."""
+    def _sample_theta(rng):
+        return float(rng.uniform(1.0, 5.0))
+    r = mc_kernel_kl_general(
+        sample_y_given_theta_a=poisson_sample_y,
+        log_pdf_a=poisson_log_pdf,
+        log_pdf_b=poisson_log_pdf,        # same!
+        sample_theta=_sample_theta,
+        n_theta_samples=400, n_y_per_theta=100, seed=0,
+        label_a="Poisson(θ)", label_b="Poisson(θ)",
+    )
+    # Exactly identical log-pdfs on same y → KL is exactly 0
+    assert r.kl_estimate == 0.0, \
+        f"identical-kernel MC KL should be 0, got {r.kl_estimate}"
+    print(f"[PASS] identical-kernel MC KL = 0 exactly "
+          f"(K_a = K_b = Poisson(θ))")
+
+
 if __name__ == "__main__":
-    print("=== P4.8 + P4.9 semantic equivalence validation ===\n")
+    print("=== P4.8 + P4.9 + P4.11 + P4.12 semantic equivalence validation ===\n")
     test_gaussian_log_likelihood_closed_form()
     test_bss_within_class_exact_equivalence()
     test_bss_cross_class_is_detectably_inequivalent()
@@ -212,4 +317,10 @@ if __name__ == "__main__":
     test_fritz_garbling_rejects_cross_class()
     test_mc_kernel_kl_within_class_is_zero()
     test_mc_kernel_kl_matches_closed_form_on_gaussian()
-    print("\nAll P4.8 + P4.9 semantic-equivalence checks passed.")
+    print()
+    test_polynomial_garbling_dominates_within_class()
+    test_polynomial_garbling_rejects_cross_class_even_at_degree_3()
+    test_polynomial_recovers_synthetic_quadratic_garbling()
+    test_general_mc_kl_on_poisson_matches_closed_form()
+    test_general_mc_kl_equals_zero_for_identical_kernels()
+    print("\nAll semantic-equivalence checks passed.")

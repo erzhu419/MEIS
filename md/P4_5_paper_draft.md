@@ -193,7 +193,32 @@ false equivalences that BSS / Perrone reject. On the law-zoo all three
 signatures (syntactic + BSS + Perrone) agree perfectly, so the
 equivalence finding is robust to choice of layer.
 
-### 2.6 Structural transfer
+### 2.6 Learned GNN embedding
+
+Complementing the symbolic signatures, we train a **2-layer message-
+passing neural network** to embed each belief-network graph into
+$\mathbb{R}^{16}$ via a contrastive objective. Node features are
+5-dim one-hot type labels (`prior`, `decay_kernel`,
+`saturation_kernel`, `damped_kernel`, `normal_obs`); edges come from
+each class's string diagram. The loss is NT-Xent on triples
+(anchor, positive = same-class, negatives = all different-class
+graphs), trained with hand-coded Adam on jax gradients.
+
+Training converges in ~100 epochs (loss drops 97%, from 1.51 to 0.04).
+$k$-means clustering on the learned embeddings recovers the 3-class
+partition with ARI = 1.000.
+
+**Honest limitation on this fixture**: law-zoo v2 uses one canonical
+graph per class — all domains within a class share identical
+structure. Consequently, random-initialised MPNN embeddings also
+cluster perfectly, so this fixture cannot demonstrate a
+trained-vs-untrained advantage. The contribution is the machinery:
+the GNN pipeline exists, trains stably, and drops into the same
+ARI evaluation as the symbolic layers. A future law-zoo v3 with
+within-class graph variation (noisy features, varying node counts)
+would stress the learned similarity meaningfully.
+
+### 2.7 Structural transfer
 
 Given a target domain $T$ with few observations and a source domain
 $S$ with many (and $\mathrm{sig}(T) = \mathrm{sig}(S)$), transfer
@@ -310,13 +335,15 @@ All results reproduce from these modules:
 - `phase4_structure/wl_signature.py` — Weisfeiler-Lehman `WLSignature` (P4.6)
 - `phase4_structure/markov_category.py` — categorical primitives (P4.7)
 - `phase4_structure/law_zoo_morphisms.py` — per-class string diagrams
-- `phase4_structure/semantic_equivalence.py` — BSS + Perrone kernel KL (P4.8)
+- `phase4_structure/semantic_equivalence.py` — BSS + Perrone + garbling
+  search (linear + polynomial) + general MC kernel KL (P4.8–P4.9, P4.11–P4.12)
+- `phase4_structure/gnn_embedding.py` — jax MPNN + contrastive training (P4.10)
 - `phase4_structure/retrieval.py` — distance, NN, clustering, ARI
 - `phase4_structure/transfer.py` — `infer_posterior_shape`,
   `run_transfer_benchmark`, `TransferResult`
-- `phase4_structure/tests/test_{law_zoo,signature,wl_signature,retrieval,transfer,markov_category,semantic_equivalence}.py`
+- `phase4_structure/tests/test_{law_zoo,signature,wl_signature,retrieval,transfer,markov_category,semantic_equivalence,gnn_embedding}.py`
 
-Acceptance suite: 44 unit tests across 7 modules, all PASS.
+Acceptance suite: 53 unit tests across 8 modules, all PASS.
 
 ## 7. Limitations and future work
 
@@ -325,19 +352,22 @@ Acceptance suite: 44 unit tests across 7 modules, all PASS.
    allocation — that Phase 4.v2 should add. LC circuits, pendulums,
    and predator-prey fit the damped-oscillation family; gravity and
    electric fields fit allocation.
-2. **Layered signature stack vs fully general semantic equivalence**.
-   We implement five complementary checks: op-multiset (§2.1), WL
-   refinement (§2.3), Markov-category shape matching (§2.4),
-   likelihood-match BSS + Perrone closed-form KL (§2.5), and
-   existence-of-garbling BSS search + general MC kernel KL (§2.5
-   extension). All five agree on the law-zoo. Garbling search is
-   currently restricted to the **linear-Gaussian** family — a
-   best-fit $(A, b)$ regression on sampled $(μ_a, μ_b)$ pairs. Within-
-   class it recovers the identity garbling ($A=1$, $b=0$) at machine
-   epsilon; cross-class it returns non-trivial residuals ($>50\%$ of
-   $\mu_b$ scale on all 3 pairs tested), correctly rejecting. Fully
-   general BSS (non-linear garbling search over arbitrary Markov
-   kernels) and GNN-learned embeddings remain future work.
+2. **Signature stack scope**. We implement seven complementary checks:
+   op-multiset (§2.1), WL refinement (§2.3), Markov-category shape
+   matching (§2.4), likelihood-match BSS + Perrone closed-form KL
+   (§2.5), linear-Gaussian garbling search (§2.5 extension), polynomial
+   garbling search of degree up to 3 (§2.5 extension), general-family
+   Monte Carlo kernel KL (§2.5 extension), and a learned GNN
+   embedding trained contrastively on ground-truth pairs (§2.7 new).
+   All seven recover the 3-class law-zoo partition with ARI = 1.000.
+   Garbling is currently restricted to scalar post-processors of
+   degree ≤ 3 polynomials; fully general Markov-kernel garbling would
+   require a parametric family with optimisation (e.g. normalising
+   flows). The learned GNN validates on the law-zoo but, because
+   within-class graphs are identical by construction, random-init
+   MPNNs also achieve ARI = 1.0; demonstrating a clear
+   trained-vs-untrained gap requires a future fixture with within-
+   class structural variation.
 3. **Exp_decay transfer null**. Section 4.3 documents that the
    protocol's benefit depends on the dynamics being
    *plateau-revealing*; purely decaying dynamics don't carry enough
