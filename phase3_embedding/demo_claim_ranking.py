@@ -151,6 +151,39 @@ def _claim_larger_feet():
     return model
 
 
+def _claim_zodiac():
+    """Honest encoding of 'Alice is Year-of-Tiger, Charlie isn't' — adds
+    two DISCONNECTED Categorical nodes (no causal link to weight). Observing
+    zodiac values therefore does NOT affect theta's posterior; KL ≈ 0. The
+    structural term (BIC for 2 new parameters without data-support) is
+    what makes this claim disruptive."""
+    import pymc as pm
+    from phase3_embedding.demo_alice_charlie_chain import (
+        THETA_MU, THETA_SIGMA, HEIGHT_MU, HEIGHT_SIGMA, SHOE_MU, SHOE_SIGMA,
+    )
+    with pm.Model() as model:
+        theta_A = pm.Normal("theta_A", mu=THETA_MU, sigma=THETA_SIGMA)
+        theta_B = pm.Normal("theta_B", mu=THETA_MU, sigma=THETA_SIGMA)
+        theta_C = pm.Normal("theta_C", mu=THETA_MU, sigma=THETA_SIGMA)
+        height_B = pm.Normal("height_B", mu=HEIGHT_MU, sigma=HEIGHT_SIGMA)
+        height_C = pm.Deterministic("height_C", height_B)
+        dh = pm.Normal("dh_alice", mu=2.0, sigma=5.0)
+        height_A = pm.Deterministic("height_A", height_B + dh)
+        pm.Deterministic("weight_A", theta_A * height_A ** 3)
+        pm.Deterministic("weight_B", theta_B * height_B ** 3)
+        pm.Deterministic("weight_C", theta_C * height_C ** 3)
+        pm.Normal("shoe_A", mu=SHOE_MU, sigma=SHOE_SIGMA)
+        pm.Normal("shoe_B", mu=SHOE_MU, sigma=SHOE_SIGMA)
+        pm.Normal("shoe_C", mu=SHOE_MU, sigma=SHOE_SIGMA)
+        # Orphan zodiac nodes — uniform prior over 12 values
+        zodiac_A = pm.Categorical("zodiac_A", p=[1/12] * 12)
+        zodiac_C = pm.Categorical("zodiac_C", p=[1/12] * 12)
+        # Observe: zodiac_A == tiger (idx 2), zodiac_C != tiger
+        pm.Potential("zA_obs", pm.math.switch(pm.math.eq(zodiac_A, 2), 0.0, -1e10))
+        pm.Potential("zC_obs", pm.math.switch(pm.math.eq(zodiac_C, 2), -1e10, 0.0))
+    return model
+
+
 def _build_claims() -> list[Claim]:
     return [
         Claim(
@@ -173,11 +206,11 @@ def _build_claims() -> list[Claim]:
         ),
         Claim(
             name="H_zodiac",
-            summary=("Alice was born in the Year of the Tiger; tigers are heavy "
-                     "(requires a new node 'zodiac' with no causal link to "
-                     "weight in the existing network)"),
-            apply_evidence=None,   # no valid evidence — claim cannot be embedded
-            structural_additions=2,  # +1 zodiac node, +1 zodiac→weight edge
+            summary=("Alice was born in the Year of the Tiger; Charlie was not "
+                     "(requires 2 new orphan Categorical nodes; disconnected "
+                     "from weight in the existing belief network)"),
+            apply_evidence=_claim_zodiac,  # real PyMC model; KL will be ~0
+            structural_additions=2,        # 2 orphan nodes; BIC penalty log(N)/2 · 2
         ),
     ]
 
@@ -212,9 +245,10 @@ def rank_claims(
     scores: list[ClaimScore] = []
     for claim in claims:
         if claim.apply_evidence is None:
-            # Purely structural claim — assign a massive KL floor to reflect
-            # "cannot be embedded without adding orphan structure".
-            kl = float("inf")
+            # No model provided: assume the claim cannot be tested against
+            # the belief network numerically. Use a large KL floor only as
+            # a last resort — honest claims below provide their own model.
+            kl = 100.0
         else:
             hyp_model = claim.apply_evidence()
             hyp_trace = _sample(hyp_model, draws=draws, tune=tune,
@@ -222,11 +256,8 @@ def rank_claims(
             hyp_samples = np.asarray(hyp_trace[latent_var])
             kl = _kl_normal_approx(base_samples, hyp_samples)
         structural = bic_lambda * claim.structural_additions
-        # For the purely structural claim, we replace inf with a large but
-        # finite value so that ranking stays sensible.
-        composite = (kl if math.isfinite(kl) else 100.0) + structural
-        scores.append(ClaimScore(claim=claim, kl_drift=kl if math.isfinite(kl)
-                                 else float("nan"),
+        composite = kl + structural
+        scores.append(ClaimScore(claim=claim, kl_drift=kl,
                                  structural_term=structural,
                                  composite=composite))
 
@@ -237,10 +268,8 @@ def rank_claims(
               f"{'KL drift':>9}  {'Δ struct':>9}  {'composite':>11}  description")
         print('-' * 110)
         for i, s in enumerate(scores):
-            kl_str = ("inf  " if not math.isfinite(s.kl_drift)
-                      else f"{s.kl_drift:9.3f}")
             print(f"{i+1:>4}  {s.claim.name:<14}  "
-                  f"{kl_str}  {s.structural_term:9.3f}  "
+                  f"{s.kl_drift:9.4f}  {s.structural_term:9.3f}  "
                   f"{s.composite:11.3f}  {s.claim.summary[:60]}")
 
     return scores
