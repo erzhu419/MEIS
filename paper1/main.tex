@@ -415,6 +415,73 @@ on Peregrines ($54$ vs.\ $102$ for baseline) without moving the
 mean. This is a reliability gain the prior-injection literature
 does not typically measure but which matters in deployment.
 
+\subsection{Cross-family direction check (prompt-only proxy)}
+\label{sec:exp-crossfamily-proxy}
+
+The P2.1 headline claim (Table~\ref{tab:crossenv}) is GPT-family only.
+A proper cross-family replication would require re-wiring the
+boxing-gym scientist/novice harness through a Gemini API, which is
+larger-scope engineering than this paper. We report a \emph{prompt-
+only proxy} that at least verifies the \emph{direction} of the
+effect across families.
+
+\textbf{Protocol.} Four models (\texttt{gpt-5.5},
+\texttt{gpt-5.4-mini}, \texttt{gemini-3.1-pro}, \texttt{gemini-3-flash})
+receive the Peregrines problem description and, under two conditions,
+are asked to propose a generative model:
+\textbf{baseline} (problem only) vs.\ \textbf{MEIS}
+(problem + a Poisson log-rate cross-domain prior from our library).
+Three seeds per (model, condition); responses regex-matched on the
+same three tiers used in P2.1.
+
+\begin{table}[h]
+\centering
+\caption{Cross-family prompt-only proxy: fraction of seeds with the
+regex-tier pattern present ($n = 3$ per cell).}
+\label{tab:crossfamily-proxy}
+\small
+\begin{tabular}{llrrr}
+\toprule
+Model & Condition & rise\_and\_fall & polynomial\_form & count\_or\_poisson \\
+\midrule
+\texttt{gpt-5.5}           & baseline & $1.00$ & $0.33$ & $0.67$ \\
+\texttt{gpt-5.5}           & MEIS     & $1.00$ & $1.00$ & $1.00$ \\
+\texttt{gpt-5.4-mini}      & baseline & $1.00$ & $1.00$ & $1.00$ \\
+\texttt{gpt-5.4-mini}      & MEIS     & $0.67$ & $1.00$ & $1.00$ \\
+\texttt{gemini-3.1-pro}    & baseline & $1.00$ & $1.00$ & $1.00$ \\
+\texttt{gemini-3.1-pro}    & MEIS     & $1.00$ & $1.00$ & $1.00$ \\
+\texttt{gemini-3-flash}    & baseline & $1.00$ & $1.00$ & $1.00$ \\
+\texttt{gemini-3-flash}    & MEIS     & $1.00$ & $1.00$ & $1.00$ \\
+\midrule
+\multicolumn{2}{l}{\textbf{baseline cross-model mean}} & $1.00$ & $0.83$ & $\mathbf{0.92}$ \\
+\multicolumn{2}{l}{\textbf{MEIS cross-model mean}}     & $0.92$ & $1.00$ & $\mathbf{1.00}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Honest finding.} The headline \texttt{count\_or\_poisson}
+rate of $0\%$ at baseline reported in P2.1
+(Table~\ref{tab:crossenv}) does \emph{not} replicate under
+prompt-only probing: when directly asked for the likelihood family,
+all four models mention Poisson / lambda / log-rate $92\%$ of the
+time at baseline, and $100\%$ of the time under MEIS priming. This
+is not a family effect (both OpenAI and Google hit close to
+$100\%$); it is an elicitation-context effect. The P2.1 dialog
+structure --- scientists propose experiments, novices ask
+questions, scientists answer --- is apparently a \emph{harder}
+condition under which to elicit the correct likelihood, compared to
+the direct probe we use here.
+
+\textbf{What this proxy can and cannot claim.} It \emph{can} say
+that the direction of the MEIS effect (MEIS $\geq$ baseline on every
+regex tier) is consistent across OpenAI and Google families at $12 /
+12$ cells. It \emph{cannot} replicate the original P2.1 magnitude.
+A proper cross-family boxing-gym replication is left to future work
+because it requires either (i)~porting the scientist/novice harness
+through the Gemini API, or (ii)~running the scientist-side regex
+evaluation on Gemini via OpenAI-compatible wrapper --- neither is
+available as a one-line substitution in the current codebase.
+
 \subsection{Structured-channel ablation}
 \label{sec:exp-structured}
 

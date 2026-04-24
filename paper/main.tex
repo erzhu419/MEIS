@@ -565,32 +565,82 @@ sinological consensus (political-stress explanations dominate recent
 historiography) \emph{and} isolates the orphan at a small but
 unambiguous margin above the strongest in-vocabulary claim.
 
-\subsection{Authorial-consistency check (not external evaluation)}
+\subsection{Multi-rater expert-panel evaluation (cross-family LLM-as-judge)}
 \label{sec:expert}
 
-For each benchmark we specify an \emph{authorial expected ranking} ---
-the ordering by ascending minimum-perturbation that the benchmark's
-author assigned while constructing it --- and measure its
-pair-concordance with the ranking our system produces. The concordance
-metric $\rho \in [0, 1]$ is
-\begin{equation*}
-\rho \;=\; \frac{\big|\{(i, j) : \mathrm{sign}(r^{\mathrm{e}}_{i} - r^{\mathrm{e}}_{j})
-= \mathrm{sign}(r^{\mathrm{s}}_{i} - r^{\mathrm{s}}_{j})\}\big|}
-{\binom{n}{2}},
-\end{equation*}
-equal to $(1 + \text{Kendall's}\ \tau)/2$.
+Because we cannot recruit multiple human historians or physicists per
+benchmark at the scale needed, we substitute a \emph{cross-family
+LLM-as-judge panel} for the missing human raters. Four independent
+raters are queried on each benchmark:
+\begin{itemize}[leftmargin=*, itemsep=0pt]
+\item two OpenAI family models (\texttt{gpt-5.5}, \texttt{gpt-5.4-mini});
+\item two Google family models (\texttt{gemini-3.1-pro}, \texttt{gemini-3-flash}).
+\end{itemize}
+Each rater receives the problem statement and the JSON list of $4$
+candidate hypotheses, and returns a strict-JSON ranking from
+most-to-least coherent. The panel aggregate is the Borda count.
 
-On all three benchmarks the system ranking exactly matches the
-authorial expected ranking ($\rho = 1.00$; Kendall $\tau = +1$).
-\textbf{This is a self-consistency check, not an external
-evaluation.} The benchmark's author assigned the expected ordering
-and also specified $\Delta_{h}$ for each candidate; the system is
-then shown to reproduce that ordering. It is not evidence that $D$
-matches an external rater's judgment. We include the number for
-bookkeeping parity with the $\rho \geq 0.70$ target mentioned in
-the project plan, and we note it is uninformative as external
-validation. Multi-rater evaluation on the historical-social
-benchmarks is future work (\S\ref{sec:limitations}).
+\paragraph{Metrics reported.}
+\begin{itemize}[leftmargin=*, itemsep=0pt]
+\item \emph{Inter-rater agreement}: mean pairwise Kendall $\tau$
+over the $\binom{4}{2} = 6$ rater pairs per benchmark. A proxy for
+multi-rater reliability $\kappa$.
+\item \emph{Orphan-last fraction}: proportion of (rater, benchmark)
+pairs where the LLM-rater placed the orphan hypothesis last.
+\item \emph{D-vs-panel agreement}: Kendall $\tau$ between the
+system's $D$-ranking (from \texttt{ClaimRankingEngine}) and the
+Borda-aggregate panel ranking.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Cross-family LLM expert-panel results
+($4$ raters $\times$ $3$ benchmarks; cached responses in
+\texttt{phase3\_embedding/runs/llm\_expert\_panel/}).}
+\label{tab:llm-panel}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Benchmark & Inter-rater $\overline{\tau}$ & Orphan-last frac. & $\tau(D, \text{panel})$ & Panel first choice \\
+\midrule
+Alice-Charlie  & $+0.50$ & $4/4$ & $+0.33$ & \texttt{H\_larger\_feet} \\
+Noh theater    & $+1.00$ & $4/4$ & $+0.67$ & \texttt{H\_priestly} \\
+Eastern Han    & $+0.78$ & $4/4$ & $+0.67$ & \texttt{H\_lead\_poisoning} \\
+\midrule
+\textbf{Mean}  & $\mathbf{+0.76}$ & $\mathbf{12/12}$ & $\mathbf{+0.56}$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Reading.} Three things the panel data tell us:
+
+\emph{(1) The orphan-last verdict is stable across families.} Every
+single one of $4 \times 3 = 12$ rater-benchmark pairs places the
+designed orphan hypothesis last --- including both Google-family
+raters, which had no role in building the benchmarks. This is a
+stronger cross-family signal than the author's prior specification
+of $\Delta_{h}$.
+
+\emph{(2) In-vocabulary ordering is rater-dependent; D is one
+reasonable voice.} The first-three orderings disagree across raters
+(e.g.\ on Alice-Charlie, the cheap GPT puts \texttt{H\_taller} first
+while the other three prefer \texttt{H\_larger\_feet}). $D$'s
+ranking matches the panel's first pick on Noh and Eastern Han, and
+the panel's second pick on Alice-Charlie (within the ties that
+inter-rater disagreement generates). The $\tau(D, \text{panel})$ of
+$+0.67$ on two benchmarks and $+0.33$ on the third indicates that
+$D$ picks a plausible-but-not-unique ordering; a panel of human
+raters would likely also fail to return a unique ordering on
+the first three in-vocabulary candidates.
+
+\emph{(3) The authorial ranking, by comparison, is only a
+self-consistency check.} The earlier draft of this paper reported
+authorial-ranking agreement as $\rho = 1.00$; we now treat that number
+as uninformative (the benchmark's author assigned both the expected
+ordering and the $\Delta_{h}$ annotation). Table~\ref{tab:llm-panel}
+replaces it. See \S\ref{sec:limitations} for the caveats that apply
+to LLM-as-judge panels (shared training data, language-model biases,
+and our inability here to recruit actual domain experts).
 
 \section{Baseline comparison: D vs full-BIC}
 \label{sec:baselines}
@@ -922,6 +972,25 @@ target-latent-specific drift does not. However, on Alice-Charlie
 the two criteria agree perfectly. The two are not always
 distinguishable on a given benchmark, and reporting $D$-rankings
 without the BIC comparison is insufficient.
+
+\paragraph{LLM-panel is a proxy for, not a replacement of, human raters.}
+The cross-family panel in \S\ref{sec:expert} replaces the earlier
+authorial-consistency check with something substantively stronger,
+but it is still an LLM-as-judge study. Four caveats apply. (i)~All
+four raters share training on internet-scale corpora, which likely
+include Quinean / Lakatosian philosophical background and historical
+overviews of Noh theatre and Eastern Han emperors; some of the
+``expert'' content is being reproduced rather than independently
+reasoned. (ii)~The $4$ raters span $2$ families and $2$ capability
+tiers, but the families are both large LLMs --- not a
+domain-expert-vs-layperson contrast. (iii)~On Alice-Charlie, where
+$D$'s in-vocabulary ranking depends on a $0.007$-vs-$0.037$ KL gap
+within MCMC noise, the $\tau(D, \text{panel}) = 0.33$ result is
+consistent with both ``$D$ is correct but the panel disagrees''
+and ``the panel is correct and $D$'s ordering is noisy.'' We do
+not have the statistical power to distinguish. (iv)~Multi-rater
+\emph{human} evaluation on the historical benchmarks remains
+future work.
 
 \paragraph{Social-science benchmarks use soft proxies.} Latents such
 as \texttt{ritual\_role} are $[0, 1]$ proxies whose quantitative
