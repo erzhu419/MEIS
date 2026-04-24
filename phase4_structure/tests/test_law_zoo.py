@@ -19,7 +19,7 @@ import numpy as np
 import pymc as pm
 
 from phase4_structure.law_zoo import DOMAINS, CLASS_OF
-from phase4_structure.law_zoo import exp_decay, saturation
+from phase4_structure.law_zoo import exp_decay, saturation, damped_oscillation
 
 
 REQUIRED_ATTRS = {"DOMAIN_ID", "CLASS_ID", "LATENT_ROLES",
@@ -30,19 +30,66 @@ def test_registry_has_expected_domains():
     expected = {
         "rc_circuit", "radioactive_decay", "first_order_reaction", "forgetting_curve",
         "capacitor_charging", "monomolecular_growth", "light_adaptation",
+        "rlc_circuit", "pendulum", "mass_spring",
     }
     assert set(DOMAINS.keys()) == expected, DOMAINS.keys()
-    assert set(CLASS_OF.values()) == {"exp_decay", "saturation"}
-    print(f"[PASS] 7 domains across 2 classes registered: "
-          f"{sum(v == 'exp_decay' for v in CLASS_OF.values())} exp_decay + "
-          f"{sum(v == 'saturation' for v in CLASS_OF.values())} saturation")
+    assert set(CLASS_OF.values()) == {"exp_decay", "saturation", "damped_oscillation"}
+    counts = {cls: sum(v == cls for v in CLASS_OF.values())
+              for cls in set(CLASS_OF.values())}
+    print(f"[PASS] 10 domains across 3 classes registered: "
+          f"{counts['exp_decay']} exp_decay + "
+          f"{counts['saturation']} saturation + "
+          f"{counts['damped_oscillation']} damped_oscillation")
 
 
 def test_each_domain_has_canonical_api():
     for name, mod in DOMAINS.items():
         missing = REQUIRED_ATTRS - set(dir(mod))
         assert not missing, f"{name} missing attrs: {missing}"
-    print(f"[PASS] all 7 domains expose canonical API")
+    print(f"[PASS] all 10 domains expose canonical API")
+
+
+def test_damped_oscillation_simulates_envelope_decay_with_zero_crossings():
+    """Damped oscillation: envelope |y| decays AND signal has sign flips
+    (at least one zero crossing within the observation window)."""
+    rng = np.random.default_rng(0)
+    for name in damped_oscillation.DOMAIN_REGISTRY:
+        t = damped_oscillation.default_t_grid(name, n=40)
+        y = damped_oscillation.DOMAIN_REGISTRY[name].simulate(t, rng)
+        # Envelope decay: |y| is generally larger early than late
+        assert np.abs(y[:10]).mean() > np.abs(y[-10:]).mean(), \
+            f"{name}: envelope not decaying"
+        # At least one sign flip
+        flips = np.sum(np.diff(np.sign(y)) != 0)
+        assert flips >= 1, f"{name}: no zero crossing in y = {y}"
+    print(f"[PASS] 3 damped_oscillation domains: envelope decays, "
+          f"≥1 zero crossing each")
+
+
+def test_mcmc_recovers_damped_oscillation_params():
+    """Smoke test on rlc_circuit — 30 obs should pin A, γ, ω."""
+    rng = np.random.default_rng(0)
+    mod = damped_oscillation.DOMAIN_REGISTRY["rlc_circuit"]
+    t = damped_oscillation.default_t_grid("rlc_circuit", n=30)
+    y = mod.simulate(t, rng)
+    with mod.build_model(t, y):
+        idata = pm.sample(draws=800, tune=600, chains=2, random_seed=0,
+                          progressbar=False, compute_convergence_checks=False)
+    post = idata.posterior
+    truth = mod.true_params()
+    A_mean = float(post["A"].mean())
+    gamma_mean = float(post["gamma"].mean())
+    omega_mean = float(post["omega"].mean())
+    assert abs(A_mean - truth["A"]) / truth["A"] < 0.10, \
+        f"A off: {A_mean} vs {truth['A']}"
+    assert abs(gamma_mean - truth["gamma"]) / truth["gamma"] < 0.30, \
+        f"gamma off: {gamma_mean} vs {truth['gamma']}"
+    assert abs(omega_mean - truth["omega"]) / truth["omega"] < 0.05, \
+        f"omega off: {omega_mean} vs {truth['omega']}"
+    print(f"[PASS] damped_oscillation MCMC recovers rlc_circuit: "
+          f"A {A_mean:.3f} (truth {truth['A']:.3f}), "
+          f"γ {gamma_mean:.3f} (truth {truth['gamma']:.3f}), "
+          f"ω {omega_mean:.3f} (truth {truth['omega']:.3f})")
 
 
 def test_exp_decay_simulates_monotone_decrease():
@@ -121,11 +168,13 @@ def test_mcmc_recovers_saturation_params():
 
 
 if __name__ == "__main__":
-    print("=== P4.1 law-zoo validation ===\n")
+    print("=== P4.1 + P4.v2 law-zoo validation (3 classes, 10 domains) ===\n")
     test_registry_has_expected_domains()
     test_each_domain_has_canonical_api()
     test_exp_decay_simulates_monotone_decrease()
     test_saturation_simulates_monotone_increase_and_plateau()
+    test_damped_oscillation_simulates_envelope_decay_with_zero_crossings()
     test_mcmc_recovers_exp_decay_params()
     test_mcmc_recovers_saturation_params()
-    print("\nAll P4.1 law-zoo checks passed.")
+    test_mcmc_recovers_damped_oscillation_params()
+    print("\nAll law-zoo checks passed.")

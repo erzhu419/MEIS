@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from phase4_structure.law_zoo import DOMAINS, CLASS_OF, exp_decay, saturation
+from phase4_structure.law_zoo import (
+    DOMAINS, CLASS_OF, exp_decay, saturation, damped_oscillation,
+)
 from phase4_structure.signature import signature_for_domain
 from phase4_structure.retrieval import (
     signature_distance, nearest_neighbor, cluster_signatures,
@@ -32,8 +34,10 @@ def _build_library():
     for name, cls in CLASS_OF.items():
         if cls == "exp_decay":
             t = exp_decay.default_t_grid(name, n=10)
-        else:
+        elif cls == "saturation":
             t = saturation.default_t_grid(name, n=10)
+        else:
+            t = damped_oscillation.default_t_grid(name, n=10)
         y = DOMAINS[name].simulate(t, rng)
         lib[name] = signature_for_domain(DOMAINS[name], t, y)
     return lib
@@ -41,17 +45,20 @@ def _build_library():
 
 def test_signature_distance_zero_within_class_positive_across():
     lib = _build_library()
-    # Within-class: all pairs distance 0
-    for cls in {"exp_decay", "saturation"}:
+    for cls in set(CLASS_OF.values()):
         names = [n for n, c in CLASS_OF.items() if c == cls]
         for i in range(len(names)):
             for j in range(i + 1, len(names)):
                 d = signature_distance(lib[names[i]], lib[names[j]])
                 assert d == 0.0, f"{names[i]} vs {names[j]}: d={d}"
-    # Across: any exp_decay vs any saturation → d > 0
-    d_cross = signature_distance(lib["rc_circuit"], lib["capacitor_charging"])
-    assert d_cross > 0, f"cross-class distance should be > 0, got {d_cross}"
-    print(f"[PASS] signature_distance within-class 0.0, cross-class {d_cross:.3f}")
+    # Across pairs
+    d_ed_sat = signature_distance(lib["rc_circuit"], lib["capacitor_charging"])
+    d_ed_dmp = signature_distance(lib["rc_circuit"], lib["rlc_circuit"])
+    d_sat_dmp = signature_distance(lib["capacitor_charging"], lib["rlc_circuit"])
+    for name, d in [("ed/sat", d_ed_sat), ("ed/dmp", d_ed_dmp), ("sat/dmp", d_sat_dmp)]:
+        assert d > 0, f"{name} cross-class distance should be > 0, got {d}"
+    print(f"[PASS] signature_distance intra-class 0.0, inter-class "
+          f"ed/sat={d_ed_sat:.3f}, ed/dmp={d_ed_dmp:.3f}, sat/dmp={d_sat_dmp:.3f}")
 
 
 def test_nearest_neighbor_is_always_same_class():
@@ -60,28 +67,29 @@ def test_nearest_neighbor_is_always_same_class():
         nn_name, nn_d = nearest_neighbor(name, lib)
         assert CLASS_OF[nn_name] == CLASS_OF[name], \
             f"{name} (class {CLASS_OF[name]}) nearest is {nn_name} (class {CLASS_OF[nn_name]})"
-    print(f"[PASS] nearest_neighbor preserves equivalence class on 7/7 domains")
+    print(f"[PASS] nearest_neighbor preserves equivalence class on {len(lib)}/{len(lib)} domains")
 
 
 def test_cluster_recovers_ground_truth_ari_1():
     lib = _build_library()
     names = list(lib.keys())
-    y_true = [0 if CLASS_OF[n] == "exp_decay" else 1 for n in names]
+    cls_order = {cls: i for i, cls in enumerate(sorted(set(CLASS_OF.values())))}
+    y_true = [cls_order[CLASS_OF[n]] for n in names]
 
-    # Fingerprint mode (canonical equivalence signal from P4.2)
+    # Fingerprint mode
     labels_fp = cluster_signatures(lib, mode="fingerprint")
     y_pred_fp = [labels_fp[n] for n in names]
     ari_fp = adjusted_rand_index(y_true, y_pred_fp)
     assert ari_fp == 1.0, f"fingerprint-mode ARI={ari_fp}"
-    assert len(set(y_pred_fp)) == 2
+    assert len(set(y_pred_fp)) == 3
 
-    # Threshold mode with tau < cross-class distance (0.154) also recovers
+    # Threshold mode with tau small enough to keep all 3 classes separate
     labels_th = cluster_signatures(lib, mode="threshold", tau=0.05)
     y_pred_th = [labels_th[n] for n in names]
     ari_th = adjusted_rand_index(y_true, y_pred_th)
     assert ari_th == 1.0, f"threshold-mode ARI={ari_th}"
 
-    print(f"[PASS] cluster_signatures recovers 2 ground-truth classes:"
+    print(f"[PASS] cluster_signatures recovers 3 ground-truth classes (n={len(names)}):"
           f" ARI(fingerprint)={ari_fp:.3f}, ARI(threshold,τ=0.05)={ari_th:.3f} "
           f"(Plan §Phase 5 task 2 target > 0.8)")
 
