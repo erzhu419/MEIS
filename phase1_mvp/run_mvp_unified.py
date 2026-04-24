@@ -85,11 +85,52 @@ ENV_TO_LATENT = {
         "obs_sigma":           2.0,
         "x_label":              "height_cm",
         "y_label":              "weight_kg",
+        # human-readable bridge from theta to the observable quantity.
+        "belief_snapshot_template": (
+            "Persistent belief from {n_evidence} previous observations "
+            "across prior experiments:\n"
+            "  theta ~ Normal(mu={mu:.3e}, sigma={sigma:.3e})\n"
+            "  implied formula: weight_kg = theta * height_cm ** 3 "
+            "(with measurement noise sigma = 2.0 kg)\n"
+            "  implied posterior-predictive at h=170 cm: "
+            "weight in [{pred_lo:.1f}, {pred_hi:.1f}] kg (1-sigma band)\n"
+            "Use this as your starting belief BEFORE running your own "
+            "experiments below; refine it with your fresh observations."
+        ),
     },
     # dugongs / peregrines / lotka_volterra: NOT YET SUPPORTED.
     # Wiring those requires kl_drift_mcmc.rank_hypotheses_mcmc to also
     # drive add_evidence, which is P2.3 commit-5 scope.
 }
+
+
+def _format_belief_snapshot(store: "BeliefStore", env_name: str) -> str | None:
+    """Render the current posterior of an env's latent node as a natural-
+    language block suitable for prepending to the scientist's system msg.
+    Returns None if not applicable."""
+    cfg = ENV_TO_LATENT.get(env_name)
+    if cfg is None or store is None or not cfg.get("belief_snapshot_template"):
+        return None
+    try:
+        node = store.get_node(cfg["latent_node_id"])
+    except KeyError:
+        return None
+    post = node.posterior.as_gaussian()
+    # For alice_charlie specifically, predictive-at-170 uses cube law.
+    # Generalise later if needed.
+    if env_name == "alice_charlie":
+        h_ref = 170.0
+        mu_pred = post.mu * h_ref ** 3
+        sigma_pred = post.sigma * h_ref ** 3
+        pred_lo = mu_pred - sigma_pred
+        pred_hi = mu_pred + sigma_pred
+    else:
+        pred_lo = pred_hi = 0.0
+    return cfg["belief_snapshot_template"].format(
+        n_evidence=len(store.evidence),
+        mu=post.mu, sigma=post.sigma,
+        pred_lo=pred_lo, pred_hi=pred_hi,
+    )
 
 # Per-env prompts to elicit a STRUCTURED model distillation from the scientist.
 # The scientist has already produced a free-form NL explanation; now we ask
@@ -276,14 +317,16 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
                          temperature=temperature, max_tokens=max_tokens,
                          prior_k=prior_k)
 
-    scientist.set_system_message(goal.get_system_message(include_prior))
-
-    # --- Optional persistent belief store (P2.3 commit 4) --------------------
-    # Load existing store or initialise from library. Only alice_charlie
-    # supports evidence accumulation right now (see ENV_TO_LATENT).
+    # --- Optional persistent belief store (P2.3 commits 4 + 5) -------------
+    # commit 4: load/save + evidence accumulation (done)
+    # commit 5 (this): if the store holds any evidence, inject a natural-
+    # language snapshot of the current posterior into the scientist's
+    # system message BEFORE it is set. This is how accumulated beliefs
+    # start influencing future runs' behavior, not just state on disk.
     belief_store: BeliefStore | None = None
     belief_cfg = ENV_TO_LATENT.get(env_name)
     belief_prior_snapshot: dict | None = None
+    belief_snapshot_text: str | None = None
     if persist_belief_path is not None:
         bpath = Path(persist_belief_path)
         if bpath.exists() and any(bpath.iterdir()):
@@ -296,6 +339,17 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
                 "sigma": float(belief_store.get_node(belief_cfg["latent_node_id"]).posterior.sigma),
                 "n_evidence_before_run": len(belief_store.evidence),
             }
+            # Only inject when the store has grown past the library (i.e.
+            # at least one prior run has contributed). Library-only stores
+            # carry the same info as the existing MEIS prior injection, so
+            # no new signal would be added.
+            if belief_prior_snapshot["n_evidence_before_run"] > 0:
+                belief_snapshot_text = _format_belief_snapshot(belief_store, env_name)
+
+    base_sys_msg = goal.get_system_message(include_prior)
+    if belief_snapshot_text:
+        base_sys_msg = f"{base_sys_msg}\n\n{belief_snapshot_text}"
+    scientist.set_system_message(base_sys_msg)
 
     # --- 10 observation rounds ---
     queries, observations, successes = [], [], []
@@ -419,6 +473,7 @@ def run_mvp(seed: int, model_name: str = "gpt-5.4", *,
                 "persist_belief_path": persist_belief_path,
                 "belief_prior_snapshot": belief_prior_snapshot,
                 "belief_posterior_snapshot": belief_posterior_snapshot,
+                "belief_snapshot_injected": bool(belief_snapshot_text),
                 "prior_query": prior_query,
                 "prior_k": prior_k,
                 "prior_header": DEFAULT_PRIOR_HEADER,

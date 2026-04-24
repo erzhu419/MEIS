@@ -423,6 +423,43 @@ def test_persist_belief_two_run_accumulation():
               f"n_evidence {n_r1} → {n_r2}")
 
 
+def test_sequential_demo_tightens_posterior():
+    """P2.3 commit-5 acceptance: the sequential experiment demo should
+    show Persist's posterior σ at least 2× tighter than Stateless at
+    round 10, and Persist's evidence count must reach N_ROUNDS *
+    N_OBS_PER_ROUND. The MAE on predictions is NOT required to be
+    dramatically lower because observation-noise sigma (2 kg) already
+    floors it; we just require that Persist is not significantly worse."""
+    from phase3_embedding.demo_sequential import (
+        run_stateless_vs_persist, N_ROUNDS, N_OBS_PER_ROUND,
+    )
+    res = run_stateless_vs_persist(verbose=False)
+
+    # σ tightening: Persist's final σ is at most half Stateless's final σ
+    sigma_ratio = res["B_sigmas"][-1] / res["A_sigmas"][-1]
+    assert sigma_ratio <= 0.5, \
+        f"Persist σ at round {N_ROUNDS} must be ≤ 50% of Stateless; got ratio {sigma_ratio:.3f}"
+
+    # Evidence count: B accumulates N_ROUNDS * N_OBS_PER_ROUND
+    assert res["B_n_evidence"][-1] == N_ROUNDS * N_OBS_PER_ROUND, \
+        f"B n_evidence mismatch: {res['B_n_evidence'][-1]}"
+
+    # σ strictly monotone-decreasing across rounds (each round adds info)
+    for i in range(1, N_ROUNDS):
+        assert res["B_sigmas"][i] <= res["B_sigmas"][i-1] + 1e-14, \
+            f"B σ non-monotone at round {i}: {res['B_sigmas'][i-1]} -> {res['B_sigmas'][i]}"
+
+    # MAE: Persist should not be meaningfully WORSE than Stateless on average
+    mae_ratio = np.mean(res["B_maes"]) / np.mean(res["A_maes"])
+    assert mae_ratio <= 1.05, \
+        f"Persist should not be notably worse on MAE; got B/A ratio {mae_ratio:.3f}"
+
+    print(f"[PASS] sequential demo: "
+          f"final σ_persist / σ_stateless = {sigma_ratio:.3f}, "
+          f"mean MAE ratio B/A = {mae_ratio:.3f}, "
+          f"n_evidence final = {res['B_n_evidence'][-1]}")
+
+
 def test_persist_belief_disabled_by_default_is_bitwise_identical():
     """Without --persist-belief, nothing touches disk and the runner must
     be identical to pre-commit-4 behavior. We verify by constructing an
@@ -439,7 +476,7 @@ def test_persist_belief_disabled_by_default_is_bitwise_identical():
 
 
 if __name__ == "__main__":
-    print("=== P2.3 commits 2+3+4 validation: in-memory + on-disk + runner-wired ===\n")
+    print("=== P2.3 commits 2+3+4+5 validation: belief store end-to-end ===\n")
     test_fresh_store_from_library()
     test_single_conjugate_update_matches_phase1()
     test_hypothesis_ranking_persists()
@@ -449,6 +486,8 @@ if __name__ == "__main__":
     test_disk_roundtrip()
     test_disk_sample_posterior_roundtrip()
     test_persist_belief_two_run_accumulation()
+    test_sequential_demo_tightens_posterior()
     test_persist_belief_disabled_by_default_is_bitwise_identical()
-    print("\nAll 10 checks passed (6/7 design-§6 acceptance + 2 disk round-trips + 2 commit-4 persistence). "
+    print("\nAll 11 checks passed (6/7 design-§6 acceptance + disk round-trips + "
+          "commit-4 persistence + commit-5 sequential demo acceptance). "
           "Test 3 (non-conjugate MCMC update) still deferred.")
