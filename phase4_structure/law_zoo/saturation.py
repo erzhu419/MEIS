@@ -81,10 +81,14 @@ def _make_domain_module(spec: DomainSpec):
     def true_params() -> dict:
         return dict(ymax=spec.true_ymax, k=spec.true_k, sigma=spec.true_sigma)
 
-    def build_model(t_obs: np.ndarray, y_obs: np.ndarray) -> pm.Model:
+    def build_model(t_obs: np.ndarray, y_obs: np.ndarray,
+                    prior_overrides: dict | None = None) -> pm.Model:
+        po = prior_overrides or {}
+        ymax_sigma = po.get("ymax_sigma", spec.ymax_prior[1])
+        k_sigma = po.get("k_sigma", spec.k_prior[1])
         with pm.Model() as model:
-            ymax = pm.LogNormal("ymax", mu=spec.ymax_prior[0], sigma=spec.ymax_prior[1])
-            k = pm.LogNormal("k", mu=spec.k_prior[0], sigma=spec.k_prior[1])
+            ymax = pm.LogNormal("ymax", mu=spec.ymax_prior[0], sigma=ymax_sigma)
+            k = pm.LogNormal("k", mu=spec.k_prior[0], sigma=k_sigma)
             sigma = pm.HalfNormal("sigma", sigma=spec.sigma_prior)
             mu = ymax * (1.0 - pm.math.exp(-k * t_obs))
             pm.Normal("y_obs", mu=mu, sigma=sigma, observed=y_obs)
