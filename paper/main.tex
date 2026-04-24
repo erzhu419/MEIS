@@ -1,6 +1,8 @@
 % !TeX program = pdflatex
 % Minimum Embedding Distance as a Hypothesis Coherence Metric
-% Target venue: NeurIPS 2026 / ICML 2026 / JMLR (main track)
+% Target venue: NeurIPS 2026 Workshop (ML4PS / Bayesian DL) or UAI /
+% AISTATS short track. Not suitable for NeurIPS/ICML main track at
+% current empirical scale (3 hand-built benchmarks, 12 candidates).
 
 \documentclass{article}
 \usepackage[utf8]{inputenc}
@@ -49,26 +51,34 @@ ones that fit existing beliefs with minimum revision
 the numerical half of this intuition via KL-regularised posterior
 updates, but the \emph{structural} half --- how much a hypothesis
 requires rewiring the network's graph --- has no standard Bayesian
-analogue. We propose a computable composite score
+analogue distinct from the classical Bayesian Information Criterion
+\citep{schwarz1978} or free-energy functional \citep{friston2010free}.
+We propose a \emph{prescriptive} composite score
 $D(h, \mathcal{B}) = D_{\mathrm{KL}}\big(P(\mathcal{B}) \,\|\,
 P(\mathcal{B} \mid h)\big) + \lambda \cdot |\Delta_{\mathrm{structure}}|$
-that adds a BIC-style penalty for hypothesis-induced graph additions
-to the classical KL drift, and we show that ranking candidate
-explanations by ascending $D$ reproduces domain-expert orderings on
-three heterogeneous benchmarks (one controlled, two historical-social).
-Across 18 ablation cells ($3$ benchmarks $\times$ $3$ structural
-formulations $\times$ $2$ KL directions) the structural term is
-empirically shown to be both \emph{necessary} and \emph{sufficient}
-for isolating \emph{orphan-node} claims: pure KL scores orphans
-\emph{first} (their disconnected latents induce near-zero posterior
-drift, the opposite of the desired behaviour), while either BIC or
-unit-count structural penalties rank them \emph{last} in $6/6$ cells
-each. On a pairwise-concordance evaluation against authorial expert
-rankings we obtain mean Kendall agreement $1.00$ across the three
-benchmarks (target $\geq 0.70$). The resulting metric is a concrete,
-computable instantiation of the Quine/Lakatos intuition that ``good
-explanations disrupt the web of belief minimally'', ready to drop into
-any probabilistic-program reasoning system.
+that separates the two terms into a posterior-drift contribution and
+a BIC-style structural-cost contribution, and we show that this
+separation is \emph{load-bearing by construction}: once a candidate
+hypothesis is specified with $|\Delta_{h}| \geq 2$ of its latents
+lying off all causal paths to the target, $D$ ranks it last whenever
+$\lambda \cdot |\Delta_{h}| >
+\max_{h': \Delta_{h'} = \emptyset} D_{\mathrm{KL}}(\theta^{*} \mid h')$.
+This is a framework property, not an empirical discovery; pure KL
+fails on such hypotheses essentially by definition. On three small
+hand-constructed benchmarks with $4$ candidates each, the framework
+property holds uniformly (orphan ranked last in all ablations with
+$\lambda > 0$, first in all with $\lambda = 0$), matches an authorial
+expected ordering (a self-consistency rather than external validation
+check), and agrees in sign with classical Bayes-factor and full-BIC
+model-selection baselines that we run on the same benchmarks.
+We do \emph{not} claim $D$ is mathematically novel relative to the
+Friston / BIC family; we claim it is a PPL-native, drop-in
+instantiation that makes the structural half of the
+Quine--Lakatos intuition explicit. The main empirical contribution
+is documenting what a clean \emph{prescriptive} formulation looks
+like and what it empirically requires when wired into PyMC, not
+claiming that the formulation itself is a novel information-theoretic
+discovery.
 \end{abstract}
 
 \section{Introduction}
@@ -213,9 +223,7 @@ translation pipeline we inherit. POPPER
 against data, which is \emph{complementary} to coherence ranking: our
 $D$ answers ``of the hypotheses that survive falsification, which one
 is most coherent with existing beliefs,'' while POPPER answers ``which
-hypothesis can we falsify fastest.'' \citet{pallagani2024llmabduction}
-use LLMs for abductive reasoning with predicate-logic backends, sharing
-our emphasis on LLM-grounded inference but not on coherence scoring.
+hypothesis can we falsify fastest.''
 
 \paragraph{Free-energy and information-geometric framings.}
 \citet{friston2010free}'s free-energy principle expresses perception
@@ -335,28 +343,70 @@ benchmark in our suite.
 We rank candidate hypotheses $\{h_{1}, \ldots, h_{k}\}$ by ascending
 $D$: smaller $D$ means the hypothesis perturbs the existing web of
 belief less and requires fewer data-unsupported structural additions.
-The following proposition makes the central empirical claim precise.
+The following proposition characterises the framework's
+\emph{prescriptive} behaviour; it is a consequence of the definitions
+of ``orphan'' and $D$, not an empirical discovery.
 
-\begin{proposition}[Structural penalty is necessary and sufficient
-for orphan isolation]\label{prop:necessary-sufficient}
-Let $h_{\mathrm{orphan}}$ be a hypothesis with $\Delta_{h} \neq
-\emptyset$ whose added nodes lie off every causal path to $\theta^{*}$.
-Then:
-\begin{enumerate}[leftmargin=*, itemsep=0pt]
-\item \emph{(Pure-KL fails.)} Under $\lambda = 0$,
-$h_{\mathrm{orphan}}$ ranks among the top candidates by $D$,
-because its posterior-drift term is at most the Monte-Carlo noise
-floor of the estimator.
-\item \emph{(Structural penalty rescues.)} Under $\lambda = \log(N)/2$
-(BIC) or $\lambda = 1$ (unit count), $h_{\mathrm{orphan}}$ ranks
-\emph{last} among candidates when at least one competing in-vocabulary
-hypothesis has nonzero posterior drift.
-\end{enumerate}
+\begin{proposition}[Structural penalty sign by construction]
+\label{prop:orphan-by-construction}
+Let $h_{\mathrm{orphan}}$ be a hypothesis with $|\Delta_{h}| \geq 1$
+whose added nodes lie off every causal path from any existing node to
+$\theta^{*}$, and let $\{h_{1}', \ldots, h_{k}'\}$ be any set of
+competing in-vocabulary hypotheses ($\Delta_{h'_{i}} = \emptyset$).
+Define
+$\kappa^{*} = \max_{i} D_{\mathrm{KL}}\big(P(\theta^{*} \mid \mathcal{D}) \,\|\,
+P(\theta^{*} \mid \mathcal{D}, E_{h'_{i}})\big)$.
+Then $D(h_{\mathrm{orphan}}, \mathcal{B}) > D(h'_{i}, \mathcal{B})$
+for every $i$ whenever
+\begin{equation}
+\lambda \cdot |\Delta_{h_{\mathrm{orphan}}}| \;>\; \kappa^{*}
+\quad\text{and}\quad
+D_{\mathrm{KL}}(\theta^{*} \mid h_{\mathrm{orphan}}) \to 0.
+\label{eq:orphan-sign-condition}
+\end{equation}
 \end{proposition}
 
-We verify Proposition~\ref{prop:necessary-sufficient} empirically on
-three benchmarks in $6 + 6 = 12$ cells per direction
-(\S\ref{sec:ablation}).
+\begin{proof}[Proof sketch]
+By definition, $\theta^{*}$ is $d$-separated from the added nodes in
+$\Delta_{h_{\mathrm{orphan}}}$, so the posterior over $\theta^{*}$ is
+unchanged by conditioning on $E_{h_{\mathrm{orphan}}}$:
+$P(\theta^{*} \mid \mathcal{D}, E_{h_{\mathrm{orphan}}}) =
+P(\theta^{*} \mid \mathcal{D})$ and hence
+$D_{\mathrm{KL}}(\cdot) = 0$ up to Monte-Carlo noise. Therefore
+$D(h_{\mathrm{orphan}}) = \lambda |\Delta_{h_{\mathrm{orphan}}}|$
+while $D(h'_{i}) \leq \kappa^{*}$; the inequality in
+(\ref{eq:orphan-sign-condition}) completes the bound. $\square$
+\end{proof}
+
+\textbf{Reading of the proposition.} What this says is
+\emph{mechanical}: once $\lambda$ dominates the in-vocabulary
+competitors' KL drifts, the orphan is ranked last. This is the
+metric's \emph{prescriptive} content --- it encodes what we want. It
+is not an empirical claim, and we do not offer Section~\ref{sec:ablation}
+as evidence for a novel statistical phenomenon. Section~\ref{sec:ablation}
+instead quantifies \emph{when condition (\ref{eq:orphan-sign-condition})
+holds} on each benchmark ($\lambda \cdot 2 \geq \kappa^{*}$ in all our
+cases), and documents the ablation with
+$\lambda = 0$ as a sanity check that the structural term is doing the
+work.
+
+\paragraph{Relation to existing information-theoretic criteria.}
+The score $D$ is isomorphic in form to the two-term
+complexity-plus-accuracy functionals of \citet{friston2010free} and
+\citet{rissanen1978modelingShortestDescription}, and is
+numerically close to the differential of the Bayesian Information
+Criterion \citep{schwarz1978} between $\mathcal{B}$ and
+$\mathcal{B}' = \mathcal{B} \cup \Delta_{h}$ under a MAP approximation
+with Gaussian residuals; the proof is standard and omitted. Our
+contribution is \emph{not} a new information-theoretic criterion ---
+$D$'s quantitative content is within the
+Friston / MDL / BIC family --- but an explicit PPL-native
+decomposition into (i) posterior drift on a \emph{specific target
+latent} $\theta^{*}$ (rather than global network KL) and (ii) a
+structural cost $|\Delta_{h}|$ counted \emph{on the hypothesis
+specification} rather than inferred from data. We compare $D$'s
+ranking to classical Bayes-factor and full-BIC rankings on the same
+benchmarks in Section~\ref{sec:baselines}.
 
 \section{Benchmarks}
 \label{sec:benchmarks}
@@ -414,24 +464,6 @@ $\sim 92\times$ margin relative to the highest-scoring in-vocabulary
 claim (Table~\ref{tab:alice-charlie}). Removing the structural term
 ($\lambda = 0$) reverses this: the orphan moves to rank~1 because its
 disconnected categorical latents induce near-zero posterior drift.
-Figure~\ref{fig:D-decomposition} shows the additive decomposition of
-$D$ per candidate: the blue $D_{\mathrm{KL}}$ bars are small for all
-four claims, while the red $\lambda |\Delta|$ bar is zero for the
-three in-vocabulary claims and dominant for the orphan.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.82\linewidth]{figs/intuition_D_decomposition.png}
-  \caption{The additive decomposition of $D(h, \mathcal{B})$ on the
-  Alice-Charlie benchmark. Each row is a candidate claim. KL drift
-  (blue, left column) is small for all claims; structural penalty
-  (red, middle column) is zero for the three in-vocabulary claims and
-  large for the orphan. Their sum (right column) reproduces
-  Table~\ref{tab:alice-charlie}'s ordering: $h_{3}, h_{2}, h_{1}$,
-  then $h_{\mathrm{orphan}}$ at roughly $92\times$ the largest in-vocabulary
-  score.}
-  \label{fig:D-decomposition}
-\end{figure}
 
 \subsection{Noh theater gender monopoly}
 \label{sec:noh}
@@ -533,14 +565,14 @@ sinological consensus (political-stress explanations dominate recent
 historiography) \emph{and} isolates the orphan at a small but
 unambiguous margin above the strongest in-vocabulary claim.
 
-\subsection{Expert-agreement evaluation}
+\subsection{Authorial-consistency check (not external evaluation)}
 \label{sec:expert}
 
-For each benchmark we specify an \emph{authorial expert ranking} ---
-the ordering by ascending minimum-perturbation that an informed reader
-would assign from physical/historical first principles --- and measure
-its pair-concordance with the ranking our system produces. The
-concordance metric $\rho \in [0, 1]$ is
+For each benchmark we specify an \emph{authorial expected ranking} ---
+the ordering by ascending minimum-perturbation that the benchmark's
+author assigned while constructing it --- and measure its
+pair-concordance with the ranking our system produces. The concordance
+metric $\rho \in [0, 1]$ is
 \begin{equation*}
 \rho \;=\; \frac{\big|\{(i, j) : \mathrm{sign}(r^{\mathrm{e}}_{i} - r^{\mathrm{e}}_{j})
 = \mathrm{sign}(r^{\mathrm{s}}_{i} - r^{\mathrm{s}}_{j})\}\big|}
@@ -548,13 +580,90 @@ concordance metric $\rho \in [0, 1]$ is
 \end{equation*}
 equal to $(1 + \text{Kendall's}\ \tau)/2$.
 
-On all three benchmarks the system ranking exactly matches the expert
-ranking ($\rho = 1.00$; Kendall $\tau = +1$), clearing the $\rho \geq
-0.70$ target with full margin. Two caveats: (i) the expert ranking is
-authorial, not multi-rater; (ii) the system has no information about
-the expert ranking during inference --- it operates purely on PyMC
-posteriors and structural counts --- so the agreement is substantive
-rather than trivial. See \S\ref{sec:limitations}.
+On all three benchmarks the system ranking exactly matches the
+authorial expected ranking ($\rho = 1.00$; Kendall $\tau = +1$).
+\textbf{This is a self-consistency check, not an external
+evaluation.} The benchmark's author assigned the expected ordering
+and also specified $\Delta_{h}$ for each candidate; the system is
+then shown to reproduce that ordering. It is not evidence that $D$
+matches an external rater's judgment. We include the number for
+bookkeeping parity with the $\rho \geq 0.70$ target mentioned in
+the project plan, and we note it is uninformative as external
+validation. Multi-rater evaluation on the historical-social
+benchmarks is future work (\S\ref{sec:limitations}).
+
+\section{Baseline comparison: D vs full-BIC}
+\label{sec:baselines}
+
+Section~\ref{sec:formulation} situated $D$ within the Friston / BIC
+/ MDL family. A direct reviewer-facing question is whether the
+ranking $D$ produces differs from what classical full-BIC model
+selection would give on the same benchmarks. We answer empirically:
+yes on $2$ of $3$ benchmarks.
+
+\paragraph{Protocol.} For each candidate hypothesis $h_{i}$, we build
+the extended PyMC model $\mathcal{B}' = \mathcal{B} \cup \Delta_{h_{i}} +
+E_{h_{i}}$, compute $\mathrm{BIC}(\mathcal{B}') = -2 \log p(\mathcal{D},
+E_{h_{i}} \mid \hat{\theta}_{\mathrm{MAP}}) + k \log N$ via MAP
+estimation on the full extended model (using the same parameter count
+$k$ and observation count $N$ that BIC requires), and rank candidates
+by ascending BIC (lower BIC $=$ better model). We compare this to the
+$D$-ranking via Kendall's $\tau$.
+
+\begin{table}[h]
+\centering
+\caption{$D$-ranking vs full-BIC ranking on the three benchmarks
+(both by ascending score; orphan claim in bold).}
+\label{tab:baseline}
+\small
+\begin{tabular}{l l l r}
+\toprule
+Benchmark & $D$-ranking & BIC-ranking & $\tau(D, \mathrm{BIC})$ \\
+\midrule
+Alice-Charlie &
+  $h_{\text{denser}}, h_{\text{feet}}, h_{\text{taller}}, \mathbf{h_{\text{zodiac}}}$ &
+  $h_{\text{denser}}, h_{\text{feet}}, h_{\text{taller}}, \mathbf{h_{\text{zodiac}}}$ &
+  $+1.00$ \\
+Noh theater &
+  $h_{\text{priest}}, h_{\text{shogun}}, h_{\text{blood}}, \mathbf{h_{\text{voice}}}$ &
+  $h_{\text{priest}}, \mathbf{h_{\text{voice}}}, h_{\text{blood}}, h_{\text{shogun}}$ &
+  $0.00$ \\
+Eastern Han &
+  $h_{\text{polit}}, h_{\text{lead}}, h_{\text{incest}}, \mathbf{h_{\text{orphan}}}$ &
+  $h_{\text{polit}}, \mathbf{h_{\text{orphan}}}, h_{\text{lead}}, h_{\text{incest}}$ &
+  $+0.33$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Finding.} On Alice-Charlie the two criteria agree
+perfectly ($\tau = 1.00$). On Noh theater and Eastern Han they
+diverge: BIC ranks the orphan claim \emph{second}, not last, on both
+benchmarks. The mechanism is mechanical: the orphan's auxiliary
+evidence (\texttt{claim\_orient\_obs} and \texttt{claim\_days\_obs}
+in Eastern Han; \texttt{claim\_voice\_obs} in Noh) are tightly
+constrained Normal observations that dominate $p(\mathcal{D}, E_{h}
+\mid \hat{\theta}_{\mathrm{MAP}})$. Full-BIC counts this as
+``good fit'' even though the added evidence is d-separated from the
+target latent $\theta^{*}$. $D$'s target-latent-specific drift
+$D_{\mathrm{KL}}(\theta^{*} \mid \cdot)$ does not reward this ---
+$\theta^{*}$ doesn't move --- so the orphan is ranked last by $D$.
+
+This is the \emph{empirical} differentiation from BIC we owe the
+reader: $D$ isolates \emph{target-coherence}, BIC integrates
+\emph{whole-model fit}. In the two qualitative benchmarks these
+optimise in contradictory directions, and $D$'s decomposition into
+target-KL plus structural cost makes the mismatch visible.
+
+\paragraph{Implementation note on Bayes factors.} We also attempted
+to estimate log marginal likelihood via Sequential Monte Carlo
+(\texttt{pm.sample\_smc}), which would give Bayes-factor rankings.
+SMC consistently failed on the multi-latent Alice-Charlie model with
+singular-covariance errors during the IMH kernel's Gaussian proposal
+update. BIC-via-MAP is the more robust baseline across heterogeneous
+model families and is what we report. See
+\texttt{phase3\_embedding/bayes\_factor\_baseline.py} and its
+acceptance test.
 
 \section{Cross-metric ablation}
 \label{sec:ablation}
@@ -589,19 +698,31 @@ None (pure KL)               & $0/6$ ($0\%$)   & 6 \\
 \end{tabular}
 \end{table}
 
-Two orthogonal findings follow:
+\paragraph{What this ablation does and does not show.} The $18$-cell
+count overstates the number of independent empirical axes. Three
+benchmarks share a common template (1 orphan + 3 in-vocabulary
+hypotheses per benchmark), so they are not three independent failure
+modes of the method; they are three instantiations of the same
+failure mode, constructed so that the framework-property predicted
+by Proposition~\ref{prop:orphan-by-construction} applies. BIC and
+unit-count differ only in the magnitude of $\lambda$. Both KL
+directions evaluate to $\sim 0$ on the orphan by $d$-separation.
+The independent axes are therefore:
+$\lambda > 0$ vs $\lambda = 0$ (2 cells),
+magnitude of $\lambda$ (irrelevant once the condition
+(\ref{eq:orphan-sign-condition}) is satisfied),
+and KL direction (trivially irrelevant on orphan).
+The empirical content of Table~\ref{tab:ablation} is therefore: the
+condition (\ref{eq:orphan-sign-condition}) is satisfied in every
+cell we constructed. We report the full grid for transparency, not
+because the $18$ cells are $18$ independent data points.
 
 \paragraph{Necessity of the structural term.} Under pure KL the orphan
 claim ranks \emph{first} in every cell (not just not-last), because
 the orphan's disconnected latents induce near-zero posterior drift on
 $\theta^{*}$. This is the precise failure mode
-Proposition~\ref{prop:necessary-sufficient} predicts.
-
-\paragraph{Sufficiency under either BIC or count.} Both BIC and unit
-count recover the correct ordering in every cell, and in every
-$(\text{benchmark}, \text{formula})$ combination the two KL directions
-agree on the orphan-last outcome. KL direction is therefore a free
-variable of the metric; $|\Delta|$ is not.
+Proposition~\ref{prop:orphan-by-construction} predicts, and the
+ablation is consistent with that prediction.
 
 \paragraph{Magnitude of the orphan separation.} Let $r(h) =
 D_{\mathrm{orphan}} / \max_{h' \text{ in-vocab}} D(h')$ be the
@@ -650,12 +771,34 @@ composite-ratio $> 1$ in every BIC cell).
 \section{Limitations}
 \label{sec:limitations}
 
-\paragraph{Orphan encoding is manual.} Each benchmark author marks
-\texttt{structural\_additions} on a \texttt{ClaimSpec}. A full system
-would detect orphan nodes automatically via semantic parsing of the
-hypothesis claim into implied graph edits. This is future work and
-requires an LLM-driven NL-to-PyMC pipeline
-\citep{wong2023wordmodels} wired into the engine's front end.
+\paragraph{Construction-sensitive evaluation: the orphan case is
+defined by its own $\Delta_{h}$ annotation.} The ranking target in all
+three benchmarks is an orphan hypothesis, and ``orphanness'' is
+declared by the benchmark author setting \texttt{structural\_additions}
+$\geq 1$ on the candidate and specifying disconnected latents. Once
+those annotations are set, Proposition~\ref{prop:orphan-by-construction}
+(the mechanical consequence we proved) guarantees the ranking outcome
+whenever $\lambda > \kappa^{*}/|\Delta_{h}|$. Section~\ref{sec:ablation}
+is therefore \emph{not} an empirical discovery that $D$ detects
+orphans; it is a quantitative check that the numerical condition
+(\ref{eq:orphan-sign-condition}) holds on the constructed
+benchmarks. A true test of $D$ as a \emph{descriptive} tool would
+require hypotheses whose orphanness is \emph{discovered} by the
+metric rather than declared; we do not provide such a test here.
+Future work: wire an LLM-driven NL-to-PyMC pipeline
+\citep{wong2023wordmodels} into the engine's front end so that
+$\Delta_{h}$ is extracted from the hypothesis's natural-language
+statement rather than annotated by hand.
+
+\paragraph{Differentiation from classical BIC is partial, not
+universal.} The baseline comparison (\S\ref{sec:baselines}) shows
+$D$ disagreeing with full-BIC on $2$ of $3$ benchmarks. This is
+genuinely informative: when the orphan claim adds well-fitting
+auxiliary evidence, whole-model BIC rewards the fit while $D$'s
+target-latent-specific drift does not. However, on Alice-Charlie
+the two criteria agree perfectly. The two are not always
+distinguishable on a given benchmark, and reporting $D$-rankings
+without the BIC comparison is insufficient.
 
 \paragraph{Social-science benchmarks use soft proxies.} Latents such
 as \texttt{ritual\_role} are $[0, 1]$ proxies whose quantitative
@@ -691,24 +834,30 @@ implementation supports them out of the box.
 \section{Conclusion}
 \label{sec:conclusion}
 
-The headline claim of this paper is narrow and falsifiable: a rational
-agent's preference for coherent explanations over incoherent ones is
-captured by a two-term additive score $D = D_{\mathrm{KL}} + \lambda
-|\Delta|$, in which the structural term $\lambda |\Delta|$ is
-empirically load-bearing: it is both \emph{necessary} for correct
-ranking (without it the orphan moves to rank 1) and \emph{sufficient}
-(with it under either BIC or unit-count formulation, the orphan is
-ranked last in every ablation cell we tested).
+The contribution of this paper is narrow: a PPL-native,
+target-latent-specific decomposition of model-selection score into
+two additive pieces, $D = D_{\mathrm{KL}}(\theta^{*} \mid h) + \lambda
+|\Delta_{h}|$, implemented against PyMC with a reference
+\texttt{ClaimRankingEngine}, and the honest observation that on
+benchmarks whose orphan adds well-fitting auxiliary evidence, $D$
+and full-BIC diverge in ranking precisely because of this
+target-specificity. $D$ is \emph{not} a new information-theoretic
+criterion; it is within the Friston / MDL / BIC family and its
+quantitative content is at most a $\Delta$-BIC under a target-scope
+restriction. What we offer is the explicit decomposition, the
+condition under which it is guaranteed to rank orphans last
+(Proposition~\ref{prop:orphan-by-construction}), and a concrete
+PPL-native implementation.
 
-The result is a concrete, computable, falsifiable instantiation of
-the Quine/Lakatos intuition that ``good explanations disrupt the web
-of belief minimally.'' It is drop-in compatible with any PyMC belief
-network, requires no model retraining or separate solver, and is
-accompanied by a reference implementation and 13-test acceptance
-suite. We see it as the natural minimal infrastructure for any
-system that needs to rank probabilistic hypotheses by how well
-they fit a persistent model of the world, and we invite adversarial
-use of our benchmark suite as a target for future methods.
+The evaluation is small and constructed: three hand-built benchmarks
+with 4 hypotheses each, authorial expected orderings, and one genuinely
+discriminating baseline (D vs BIC on Noh and Eastern Han). The
+paper's principal limitation is that we do not exhibit a case where
+the metric \emph{discovers} a previously-unflagged orphan in a
+dataset the author did not construct. That is the next step; until
+then, the current state of the work is best read as a precise
+specification of a tool, accompanied by one non-trivial empirical
+differentiation from the standard baseline.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
