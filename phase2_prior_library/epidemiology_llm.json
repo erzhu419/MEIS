@@ -1,0 +1,264 @@
+[
+  {
+    "id": "epi_measles_r0_normal",
+    "domain": "epidemiology",
+    "keywords": [
+      "measles",
+      "R0",
+      "basic reproduction number",
+      "transmission"
+    ],
+    "vars_involved": [
+      "R0_measles [secondary infections per primary case]"
+    ],
+    "statement": "For measles in a fully susceptible population, the basic reproduction number is commonly placed in the high-transmission range around 12 to 18. A Normal prior with mean 15 and standard deviation 2.5 captures this canonical range while assigning negligible probability to nonpositive values; the variable is dimensionless and interpreted as expected secondary infections per primary infectious case.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 15.0,
+      "sigma": 2.5,
+      "units": "secondary infections per primary case"
+    },
+    "source": "Anderson and May, Infectious Diseases of Humans: Dynamics and Control",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_influenza_r0_lognormal",
+    "domain": "epidemiology",
+    "keywords": [
+      "seasonal influenza",
+      "R0",
+      "basic reproduction number",
+      "respiratory transmission"
+    ],
+    "vars_involved": [
+      "R0_seasonal_influenza [secondary infections per primary case]"
+    ],
+    "statement": "For seasonal influenza in a broadly susceptible population, empirical reviews usually place R0 near 1.2 to 1.5. A LogNormal prior with natural-log median about 1.3 and moderate spread is a practical positive prior for transmission modeling; mu and sigma are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0.262,
+      "sigma": 0.25,
+      "units": "secondary infections per primary case"
+    },
+    "source": "Biggerstaff et al., systematic review of influenza reproduction numbers, BMC Infectious Diseases, 2014",
+    "confidence": "medium"
+  },
+  {
+    "id": "epi_sarscov2_ancestral_r0_lognormal",
+    "domain": "epidemiology",
+    "keywords": [
+      "COVID-19",
+      "SARS-CoV-2",
+      "R0",
+      "ancestral strain"
+    ],
+    "vars_involved": [
+      "R0_SARS_CoV_2_ancestral [secondary infections per primary case]"
+    ],
+    "statement": "For the ancestral SARS-CoV-2 virus before widespread immunity and control measures, early outbreak estimates often centered R0 around 2 to 3. A LogNormal prior with median about 2.6 and substantial uncertainty keeps the parameter positive and reflects between-setting variability; mu and sigma are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0.956,
+      "sigma": 0.35,
+      "units": "secondary infections per primary case"
+    },
+    "source": "WHO-China Joint Mission Report on Coronavirus Disease 2019 (COVID-19), 2020",
+    "confidence": "medium"
+  },
+  {
+    "id": "epi_varicella_r0_normal",
+    "domain": "epidemiology",
+    "keywords": [
+      "varicella",
+      "chickenpox",
+      "R0",
+      "basic reproduction number"
+    ],
+    "vars_involved": [
+      "R0_varicella [secondary infections per primary case]"
+    ],
+    "statement": "For varicella in a susceptible population before routine vaccination, standard infectious-disease modeling references place the basic reproduction number roughly in the high single digits. A Normal prior centered at 9 with standard deviation 1.5 represents this transmission intensity while keeping nearly all mass in plausible positive values.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 9.0,
+      "sigma": 1.5,
+      "units": "secondary infections per primary case"
+    },
+    "source": "Anderson and May, Infectious Diseases of Humans: Dynamics and Control",
+    "confidence": "medium"
+  },
+  {
+    "id": "epi_covid19_incubation_lognormal",
+    "domain": "epidemiology",
+    "keywords": [
+      "COVID-19",
+      "incubation period",
+      "SARS-CoV-2",
+      "symptom onset"
+    ],
+    "vars_involved": [
+      "incubation_period_COVID19 [days]"
+    ],
+    "statement": "For early COVID-19 cases, the incubation period from infection or exposure to symptom onset was estimated with a median near 5 days and an upper tail around 11 to 12 days. A LogNormal prior with mu 1.63 and sigma 0.42 on the natural-log scale captures that empirical pattern in days.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 1.63,
+      "sigma": 0.42,
+      "units": "days"
+    },
+    "source": "Lauer et al., Annals of Internal Medicine, 2020 COVID-19 incubation-period study",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_influenza_incubation_gamma",
+    "domain": "epidemiology",
+    "keywords": [
+      "seasonal influenza",
+      "incubation period",
+      "respiratory infection"
+    ],
+    "vars_involved": [
+      "incubation_period_seasonal_influenza [days]"
+    ],
+    "statement": "Seasonal influenza incubation is typically short, commonly described as about 1 to 4 days with an average near 2 days. A Gamma prior with alpha 16 and beta 8, using beta as the rate parameter, gives mean 2 days and standard deviation 0.5 days.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 16.0,
+      "beta": 8.0,
+      "units": "days"
+    },
+    "source": "CDC Yellow Book, Influenza chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_measles_incubation_lognormal",
+    "domain": "epidemiology",
+    "keywords": [
+      "measles",
+      "incubation period",
+      "prodrome",
+      "vaccine-preventable disease"
+    ],
+    "vars_involved": [
+      "incubation_period_measles_to_prodrome [days]"
+    ],
+    "statement": "For measles, the incubation period from exposure to prodromal symptom onset is usually around 10 to 12 days, with recognized variation across cases. A LogNormal prior with median about 11 days and moderate dispersion provides a positive prior for exposure-to-symptom timing; mu and sigma are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 2.398,
+      "sigma": 0.25,
+      "units": "days"
+    },
+    "source": "CDC Epidemiology and Prevention of Vaccine-Preventable Diseases (Pink Book), Measles chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_ebola_incubation_gamma",
+    "domain": "epidemiology",
+    "keywords": [
+      "Ebola virus disease",
+      "incubation period",
+      "outbreak modeling"
+    ],
+    "vars_involved": [
+      "incubation_period_Ebola_virus_disease [days]"
+    ],
+    "statement": "For Ebola virus disease, outbreak analyses and public-health references describe incubation as usually within 2 to 21 days, with a mean around 11 days in the West Africa outbreak data. A Gamma prior with alpha 5.2 and beta 0.456, using beta as the rate parameter, gives mean about 11.4 days and a broad right tail.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 5.2,
+      "beta": 0.456,
+      "units": "days"
+    },
+    "source": "WHO Ebola Response Team, New England Journal of Medicine, 2014 Ebola outbreak study",
+    "confidence": "medium"
+  },
+  {
+    "id": "epi_influenza_recovery_rate_gamma",
+    "domain": "epidemiology",
+    "keywords": [
+      "seasonal influenza",
+      "recovery rate",
+      "removal rate",
+      "SIR model"
+    ],
+    "vars_involved": [
+      "gamma_recovery_seasonal_influenza [day^-1]"
+    ],
+    "statement": "In a simple SIR-style influenza model, the recovery or removal rate can be anchored to an average contagious period of roughly 5 days. A Gamma prior with alpha 25 and beta 125, using beta as the rate parameter, has mean 0.20 day^-1 and standard deviation 0.04 day^-1.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 25.0,
+      "beta": 125.0,
+      "units": "day^-1"
+    },
+    "source": "CDC Influenza guidance on contagious period and transmission",
+    "confidence": "medium"
+  },
+  {
+    "id": "epi_measles_removal_rate_gamma",
+    "domain": "epidemiology",
+    "keywords": [
+      "measles",
+      "recovery rate",
+      "infectious period",
+      "SIR model"
+    ],
+    "vars_involved": [
+      "gamma_removal_measles [day^-1]"
+    ],
+    "statement": "For measles, infectiousness is commonly described as extending from about 4 days before rash onset through 4 days after rash onset. Treating this as an approximately 8-day infectious period in a simple compartmental model gives a recovery or removal rate near 0.125 day^-1; a Gamma prior with alpha 25 and beta 200 encodes that scale.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 25.0,
+      "beta": 200.0,
+      "units": "day^-1"
+    },
+    "source": "CDC Epidemiology and Prevention of Vaccine-Preventable Diseases (Pink Book), Measles chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_us_kindergarten_mmr2_coverage_beta",
+    "domain": "epidemiology",
+    "keywords": [
+      "MMR",
+      "vaccination coverage",
+      "kindergarten",
+      "United States"
+    ],
+    "vars_involved": [
+      "two_dose_MMR_coverage_US_kindergarten [proportion]"
+    ],
+    "statement": "Recent U.S. kindergarten two-dose MMR coverage is commonly reported near 93%, with state and year variation. A Beta prior with alpha 150.4 and beta 11.3 has mean about 0.93 and standard deviation about 0.02, making it a useful prior for aggregate school-entry MMR coverage as a proportion.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 150.4,
+      "beta": 11.3,
+      "units": "proportion of target population"
+    },
+    "source": "CDC SchoolVaxView and MMWR school vaccination coverage reports",
+    "confidence": "high"
+  },
+  {
+    "id": "epi_global_dtp3_coverage_beta",
+    "domain": "epidemiology",
+    "keywords": [
+      "DTP3",
+      "vaccination coverage",
+      "childhood immunization",
+      "global health"
+    ],
+    "vars_involved": [
+      "DTP3_global_infant_coverage [proportion]"
+    ],
+    "statement": "Global coverage with the third dose of diphtheria-tetanus-pertussis vaccine is often reported in the mid-80% range in recent WHO/UNICEF estimates. A Beta prior with alpha 69.7 and beta 13.3 has mean about 0.84 and standard deviation about 0.04, appropriate for a global aggregate coverage proportion.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 69.7,
+      "beta": 13.3,
+      "units": "proportion of target population"
+    },
+    "source": "WHO/UNICEF Estimates of National Immunization Coverage (WUENIC)",
+    "confidence": "high"
+  }
+]

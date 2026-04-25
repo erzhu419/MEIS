@@ -1,0 +1,265 @@
+[
+  {
+    "id": "geophys_upper_crust_vp",
+    "domain": "geophysics",
+    "keywords": [
+      "seismology",
+      "P-wave velocity",
+      "continental crust",
+      "wave propagation"
+    ],
+    "vars_involved": [
+      "Vp_upper_continental_crust_km_per_s"
+    ],
+    "statement": "A practical prior for isotropic P-wave speed in crystalline upper continental crust is centered near 6.0 km/s, with a few tenths of km/s scatter reflecting common compositional and regional variation.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 6.0,
+      "sigma": 0.3,
+      "units": "km/s"
+    },
+    "source": "Christensen and Mooney continental-crust seismic velocity compilation; CRUST1.0 reference crustal model",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_upper_crust_vs",
+    "domain": "geophysics",
+    "keywords": [
+      "seismology",
+      "S-wave velocity",
+      "continental crust",
+      "elastic waves"
+    ],
+    "vars_involved": [
+      "Vs_upper_continental_crust_km_per_s"
+    ],
+    "statement": "For crystalline upper continental crust, S-wave velocity is commonly near 3.4 to 3.6 km/s, so a Normal prior with mean 3.45 km/s and moderate spread is suitable for generic crustal propagation models.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 3.45,
+      "sigma": 0.2,
+      "units": "km/s"
+    },
+    "source": "Christensen and Mooney continental-crust seismic velocity compilation; Shearer, Introduction to Seismology",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_upper_mantle_pn",
+    "domain": "geophysics",
+    "keywords": [
+      "Pn",
+      "uppermost mantle",
+      "P-wave velocity",
+      "travel times"
+    ],
+    "vars_involved": [
+      "Vp_uppermost_mantle_Pn_km_per_s"
+    ],
+    "statement": "The uppermost-mantle Pn velocity beneath typical continental lithosphere is usually close to 8.1 km/s, consistent with global 1-D travel-time reference models.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 8.1,
+      "sigma": 0.15,
+      "units": "km/s"
+    },
+    "source": "IASP91 and ak135 global 1-D seismic travel-time reference models",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_crust_vp_vs_ratio",
+    "domain": "geophysics",
+    "keywords": [
+      "Vp/Vs",
+      "crustal composition",
+      "Poisson ratio proxy",
+      "seismic velocities"
+    ],
+    "vars_involved": [
+      "Vp_to_Vs_ratio_continental_crust_dimensionless"
+    ],
+    "statement": "A generic prior for the continental-crust Vp/Vs ratio is centered near 1.73, close to the common quartzofeldspathic-crust value, with enough spread for mafic, felsic, fractured, or fluid-affected crust.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 1.73,
+      "sigma": 0.06,
+      "units": "dimensionless"
+    },
+    "source": "Christensen and Mooney continental-crust velocity compilation; Aki and Richards, Quantitative Seismology",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_rayleigh_phase_20s",
+    "domain": "geophysics",
+    "keywords": [
+      "Rayleigh wave",
+      "surface wave",
+      "phase velocity",
+      "dispersion"
+    ],
+    "vars_involved": [
+      "Rayleigh_phase_velocity_20s_continental_km_per_s"
+    ],
+    "statement": "Fundamental-mode Rayleigh-wave phase velocity at about 20 s period over continental crust and uppermost mantle is often around 3.5 km/s, with regional dispersion and lithospheric structure motivating a moderately broad prior.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 3.55,
+      "sigma": 0.2,
+      "units": "km/s"
+    },
+    "source": "Shearer, Introduction to Seismology; PREM surface-wave dispersion reference examples",
+    "confidence": "medium"
+  },
+  {
+    "id": "geophys_continental_crust_density",
+    "domain": "geophysics",
+    "keywords": [
+      "density",
+      "continental crust",
+      "crustal structure",
+      "seismic model"
+    ],
+    "vars_involved": [
+      "rho_continental_crust_kg_per_m3"
+    ],
+    "statement": "The bulk density of crystalline continental crust is commonly near 2800 kg/m3, with roughly 100 to 200 kg/m3 variation across felsic-to-mafic crustal compositions and depth averages.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 2800.0,
+      "sigma": 150.0,
+      "units": "kg/m^3"
+    },
+    "source": "CRUST1.0 global crustal model; Christensen and Mooney continental-crust compilation",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_upper_mantle_density",
+    "domain": "geophysics",
+    "keywords": [
+      "density",
+      "upper mantle",
+      "peridotite",
+      "Earth model"
+    ],
+    "vars_involved": [
+      "rho_uppermost_mantle_kg_per_m3"
+    ],
+    "statement": "A standard prior for uppermost-mantle density is centered near 3350 kg/m3, appropriate for peridotitic mantle just below the Moho in global reference Earth models.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 3350.0,
+      "sigma": 80.0,
+      "units": "kg/m^3"
+    },
+    "source": "Dziewonski and Anderson Preliminary Reference Earth Model (PREM)",
+    "confidence": "high"
+  },
+  {
+    "id": "geophys_crust_qp",
+    "domain": "geophysics",
+    "keywords": [
+      "attenuation",
+      "P-wave quality factor",
+      "Qp",
+      "crust"
+    ],
+    "vars_involved": [
+      "Qp_crystalline_crust_dimensionless"
+    ],
+    "statement": "For average crystalline crust at local-to-regional seismic frequencies, P-wave quality factor Qp is positive and strongly variable; this LogNormal prior uses natural-log parameters with median about 600.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 6.39693,
+      "sigma": 0.5,
+      "units": "dimensionless"
+    },
+    "source": "Aki and Richards, Quantitative Seismology; Shearer, Introduction to Seismology",
+    "confidence": "medium"
+  },
+  {
+    "id": "geophys_crust_qs",
+    "domain": "geophysics",
+    "keywords": [
+      "attenuation",
+      "S-wave quality factor",
+      "Qs",
+      "crust"
+    ],
+    "vars_involved": [
+      "Qs_crystalline_crust_dimensionless"
+    ],
+    "statement": "S-wave quality factor in average continental crust is commonly lower than Qp and varies substantially by tectonic region; this LogNormal prior uses natural-log parameters with median about 300.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 5.70378,
+      "sigma": 0.6,
+      "units": "dimensionless"
+    },
+    "source": "Aki and Richards, Quantitative Seismology; Sato, Fehler and Maeda, Seismic Wave Propagation and Scattering in the Heterogeneous Earth",
+    "confidence": "medium"
+  },
+  {
+    "id": "geophys_swave_alpha_1hz",
+    "domain": "geophysics",
+    "keywords": [
+      "attenuation coefficient",
+      "S-wave decay",
+      "anelastic attenuation",
+      "1 Hz"
+    ],
+    "vars_involved": [
+      "alpha_S_wave_1Hz_crust_km_inverse"
+    ],
+    "statement": "For 1 Hz S waves in average crystalline crust, the amplitude attenuation coefficient in an exponential path term exp(-alpha r) is often on the order of 0.003 km^-1, corresponding to Qs of a few hundred and Vs near 3.5 km/s; the LogNormal parameters are in natural-log space.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -5.80914,
+      "sigma": 0.7,
+      "units": "km^-1"
+    },
+    "source": "Aki and Richards, Quantitative Seismology, using the standard alpha = pi f / (Q v) attenuation relation",
+    "confidence": "medium"
+  },
+  {
+    "id": "geophys_site_kappa0",
+    "domain": "geophysics",
+    "keywords": [
+      "kappa",
+      "high-frequency attenuation",
+      "site response",
+      "spectral decay"
+    ],
+    "vars_involved": [
+      "kappa0_hard_rock_site_s"
+    ],
+    "statement": "The near-site high-frequency spectral decay parameter kappa0 for hard-rock to generic rock sites is nonnegative and commonly a few hundredths of a second; a HalfNormal prior with scale 0.04 s gives that order of magnitude while allowing larger attenuating sites.",
+    "formal": {
+      "distribution": "HalfNormal",
+      "sigma": 0.04,
+      "units": "s"
+    },
+    "source": "Anderson and Hough kappa high-frequency spectral-decay model",
+    "confidence": "medium"
+  },
+  {
+    "id": "geophys_q_frequency_exponent",
+    "domain": "geophysics",
+    "keywords": [
+      "frequency-dependent Q",
+      "attenuation",
+      "coda Q",
+      "power law"
+    ],
+    "vars_involved": [
+      "eta_Q_frequency_exponent_dimensionless"
+    ],
+    "statement": "For crustal attenuation laws of the form Q(f) = Q0 f^eta over local-to-regional seismic bands, eta is usually between 0 and 1 and often near 0.5 to 0.7; this Beta prior has mean 0.6.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 12.0,
+      "beta": 8.0,
+      "units": "dimensionless"
+    },
+    "source": "Sato, Fehler and Maeda, Seismic Wave Propagation and Scattering in the Heterogeneous Earth; standard coda-Q empirical summaries",
+    "confidence": "medium"
+  }
+]

@@ -1,0 +1,266 @@
+[
+  {
+    "id": "chemkin_aqueous_diffusion_limited_k2",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "diffusion_controlled",
+      "second_order",
+      "aqueous",
+      "rate_constant"
+    ],
+    "vars_involved": [
+      "k2_diffusion_limited_aqueous_L_mol^-1_s^-1"
+    ],
+    "statement": "For small-solute reactions in liquid water at about 298 K that are genuinely diffusion controlled, the second-order rate constant is commonly near 1e10 L mol^-1 s^-1. This LogNormal prior uses natural-log-space parameters, so exp(mu) is the median, with spread allowing viscosity, encounter-radius, and electrostatic effects.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 23.02585,
+      "sigma": 0.6,
+      "units": "L mol^-1 s^-1"
+    },
+    "source": "Laidler, Chemical Kinetics; Atkins and de Paula, Physical Chemistry",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_gas_collision_limited_k2",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "collision_theory",
+      "gas_phase",
+      "second_order",
+      "rate_constant"
+    ],
+    "vars_involved": [
+      "k2_collision_limited_gas_cm^3_molecule^-1_s^-1"
+    ],
+    "statement": "For gas-phase neutral or radical bimolecular reactions near 300 K that react on nearly every collision, collision-limit rate coefficients are typically of order 1e-10 cm^3 molecule^-1 s^-1. The LogNormal parameters are natural-log-space and allow moderate variation in cross section and steric factor.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -23.02585,
+      "sigma": 0.7,
+      "units": "cm^3 molecule^-1 s^-1"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry; NIST Chemical Kinetics Database",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_unimolecular_arrhenius_prefactor",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "Arrhenius",
+      "pre_exponential_factor",
+      "transition_state_theory",
+      "first_order"
+    ],
+    "vars_involved": [
+      "A_unimolecular_s^-1"
+    ],
+    "statement": "For unimolecular elementary steps analyzed near room temperature, the Arrhenius pre-exponential factor is often anchored by the transition-state frequency kBT/h, about 6.2e12 s^-1 at 298 K. This LogNormal prior uses natural-log-space parameters and permits entropy and orientation effects around that scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 29.45557,
+      "sigma": 0.8,
+      "units": "s^-1"
+    },
+    "source": "Laidler, Chemical Kinetics; Eyring transition-state theory as presented in Atkins and de Paula, Physical Chemistry",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_typical_activation_energy",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "Arrhenius",
+      "activation_energy",
+      "thermal_reaction"
+    ],
+    "vars_involved": [
+      "Ea_kJ_mol^-1"
+    ],
+    "statement": "For ordinary non-photochemical thermal reactions near ambient conditions, activation energies are often positive and on the order of tens of kJ mol^-1. Using PyMC's Gamma(alpha, beta) rate parameterization, this prior has mean 60 kJ mol^-1 and standard deviation 20 kJ mol^-1.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 9,
+      "beta": 0.15,
+      "units": "kJ mol^-1"
+    },
+    "source": "Laidler, Chemical Kinetics; House, Principles of Chemical Kinetics",
+    "confidence": "medium"
+  },
+  {
+    "id": "chemkin_solution_q10_ambient",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "Arrhenius",
+      "temperature_dependence",
+      "Q10",
+      "rate_ratio"
+    ],
+    "vars_involved": [
+      "Q10_rate_ratio_dimensionless"
+    ],
+    "statement": "For many solution-phase reactions around 20-30 C, the empirical Q10 value, defined as k(T+10 K)/k(T), is near 2 because common activation energies imply roughly a doubling for a 10 K temperature rise. This LogNormal prior is centered at a median Q10 of about 2.1.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0.74194,
+      "sigma": 0.25,
+      "units": "dimensionless"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry; Laidler, Chemical Kinetics",
+    "confidence": "medium"
+  },
+  {
+    "id": "chemkin_n2o5_decomposition_k1_318k",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "N2O5",
+      "first_order",
+      "decomposition",
+      "rate_constant"
+    ],
+    "vars_involved": [
+      "k1_N2O5_decomposition_318K_s^-1"
+    ],
+    "statement": "The classic decomposition of dinitrogen pentoxide in carbon tetrachloride or comparable textbook conditions near 318 K is treated as first order, with k1 close to 5e-4 s^-1. The LogNormal prior uses natural-log-space parameters and represents modest experimental and medium dependence.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -7.6009,
+      "sigma": 0.25,
+      "units": "s^-1"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry; Laidler, Chemical Kinetics",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_ethyl_acetate_saponification_k2",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "saponification",
+      "second_order",
+      "ethyl_acetate",
+      "hydroxide"
+    ],
+    "vars_involved": [
+      "k2_ethyl_acetate_OH_298K_L_mol^-1_s^-1"
+    ],
+    "statement": "The alkaline hydrolysis of ethyl acetate by hydroxide in dilute aqueous solution at about 298 K is a standard second-order kinetics example, with rate constants commonly near 0.1 L mol^-1 s^-1. The LogNormal prior allows variation from ionic strength and solvent details.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -2.20727,
+      "sigma": 0.35,
+      "units": "L mol^-1 s^-1"
+    },
+    "source": "Laidler, Chemical Kinetics; Espenson, Chemical Kinetics and Reaction Mechanisms",
+    "confidence": "medium"
+  },
+  {
+    "id": "chemkin_iodide_persulfate_k2",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "iodine_clock",
+      "persulfate",
+      "second_order",
+      "ionic_strength"
+    ],
+    "vars_involved": [
+      "k2_I_minus_S2O8_2minus_298K_L_mol^-1_s^-1"
+    ],
+    "statement": "For the iodide-peroxydisulfate clock reaction near 298 K, using the rate law rate = k2[I-][S2O8^2-], typical uncatalyzed aqueous rate constants are around 1e-2 L mol^-1 s^-1, with substantial dependence on ionic strength. This LogNormal prior is intentionally broad.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -4.60517,
+      "sigma": 0.7,
+      "units": "L mol^-1 s^-1"
+    },
+    "source": "Espenson, Chemical Kinetics and Reaction Mechanisms; House, Principles of Chemical Kinetics",
+    "confidence": "medium"
+  },
+  {
+    "id": "chemkin_tbucl_solvolysis_half_life",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "half_life",
+      "first_order",
+      "solvolysis",
+      "tert_butyl_chloride"
+    ],
+    "vars_involved": [
+      "t_half_tert_butyl_chloride_solvolysis_298K_s"
+    ],
+    "statement": "The solvolysis or hydrolysis of tert-butyl chloride in water-rich mixed solvent at about 298 K is a common pseudo-first-order physical-organic kinetics example, often having a half-life of minutes to tens of minutes. This LogNormal prior is centered at 1000 s and is broad because solvent composition strongly affects the rate.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 6.90776,
+      "sigma": 0.8,
+      "units": "s"
+    },
+    "source": "Moore and Pearson, Kinetics and Mechanism; standard physical-organic kinetics textbook treatments",
+    "confidence": "low"
+  },
+  {
+    "id": "chemkin_water_pkw_298k",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "equilibrium",
+      "water",
+      "autoionization",
+      "pKw"
+    ],
+    "vars_involved": [
+      "pKw_water_298K_dimensionless"
+    ],
+    "statement": "For pure water at 298 K, the ion-product equilibrium is conventionally summarized as pKw = -log10(Kw) very close to 14.000. This Normal prior is tight but leaves small room for activity-convention and temperature-control differences.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 14,
+      "sigma": 0.01,
+      "units": "dimensionless pKw"
+    },
+    "source": "CRC Handbook of Chemistry and Physics; IUPAC aqueous equilibrium data",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_acetic_acid_pka_298k",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "equilibrium",
+      "acid_base",
+      "pKa",
+      "acetic_acid"
+    ],
+    "vars_involved": [
+      "pKa_acetic_acid_water_298K_dimensionless"
+    ],
+    "statement": "For acetic acid in dilute aqueous solution at 298 K, the thermodynamic pKa is about 4.756. This Normal prior reflects a well-tabulated acid-base equilibrium constant with modest allowance for ionic-strength and convention differences.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 4.756,
+      "sigma": 0.02,
+      "units": "dimensionless pKa"
+    },
+    "source": "CRC Handbook of Chemistry and Physics; Perrin, Dissociation Constants of Organic Acids and Bases in Aqueous Solution",
+    "confidence": "high"
+  },
+  {
+    "id": "chemkin_n2o4_no2_kp_298k",
+    "domain": "chemistry_kinetics",
+    "keywords": [
+      "equilibrium",
+      "gas_phase",
+      "NO2",
+      "N2O4",
+      "Kp"
+    ],
+    "vars_involved": [
+      "Kp_N2O4_to_2NO2_298K_dimensionless"
+    ],
+    "statement": "For the gas-phase equilibrium N2O4(g) <=> 2 NO2(g) at 298 K, the dimensionless standard-state pressure equilibrium constant for dissociation is about 0.14. The LogNormal prior uses natural-log-space parameters and captures uncertainty in thermochemical tabulations and standard-state conventions.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -1.96611,
+      "sigma": 0.15,
+      "units": "dimensionless standard-state Kp"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry; NIST-JANAF Thermochemical Tables",
+    "confidence": "high"
+  }
+]

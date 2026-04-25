@@ -1,0 +1,243 @@
+[
+  {
+    "id": "ce_10k_resistor_actual_resistance",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "resistor",
+      "tolerance",
+      "dc circuits",
+      "ohms law"
+    ],
+    "vars_involved": [
+      "actual_resistance_ohm"
+    ],
+    "statement": "For a nominal 10 k\u03a9 1% metal-film resistor used at room temperature and within its power rating, a convenient prior for the actual resistance is Normal with mean 10000 ohm and standard deviation 33.3 ohm, treating the quoted 1% tolerance band as roughly a three-sigma manufacturing range.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 10000.0,
+      "sigma": 33.3,
+      "units": "ohm"
+    },
+    "source": "IEC 60115 series, Fixed resistors for use in electronic equipment; Horowitz and Hill, The Art of Electronics, 3rd ed., resistor tolerance discussion",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_100nf_capacitor_actual_capacitance",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "capacitor",
+      "capacitance",
+      "tolerance",
+      "rc circuits"
+    ],
+    "vars_involved": [
+      "actual_capacitance_F"
+    ],
+    "statement": "For a nominal 100 nF capacitor with a 10% tolerance at small-signal, room-temperature, near-zero DC-bias conditions, model actual capacitance in farads as LogNormal with log-space mu -16.1181 and sigma 0.0333; the median is 1.0e-7 F and about a three-sigma log range spans roughly \u00b110%.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -16.1181,
+      "sigma": 0.0333,
+      "units": "F"
+    },
+    "source": "IEC 60384 series, Fixed capacitors for use in electronic equipment; Horowitz and Hill, The Art of Electronics, 3rd ed., capacitor tolerance discussion",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_5v_regulated_rail_voltage",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "voltage",
+      "dc supply",
+      "regulated rail",
+      "power"
+    ],
+    "vars_involved": [
+      "regulated_rail_voltage_V"
+    ],
+    "statement": "For a nominal 5 V regulated DC rail in a small-signal or microcontroller circuit under ordinary load, a Normal prior centered at 5.0 V with sigma 0.05 V represents a typical well-regulated supply when no device-specific regulator accuracy is known.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 5.0,
+      "sigma": 0.05,
+      "units": "V"
+    },
+    "source": "Horowitz and Hill, The Art of Electronics, 3rd ed., power-supply and voltage-regulator sections",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_5v_1k_resistor_current",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "current",
+      "ohms law",
+      "resistor",
+      "dc circuit"
+    ],
+    "vars_involved": [
+      "resistor_current_A"
+    ],
+    "statement": "For current through a nominal 1 k\u03a9, 5% resistor connected to a nominal 5 V rail, ignoring self-heating, an Ohm's-law prior of Normal(0.005 A, 0.00010 A) captures ordinary rail and resistor tolerance uncertainty around the 5 mA nominal value.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.005,
+      "sigma": 0.0001,
+      "units": "A"
+    },
+    "source": "Alexander and Sadiku, Fundamentals of Electric Circuits, Ohm's law and DC circuit analysis chapters; IEC 60115 resistor tolerance classes",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_rc_time_constant_10k_100nf",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "rc circuit",
+      "time constant",
+      "transient response",
+      "capacitor charging"
+    ],
+    "vars_involved": [
+      "rc_time_constant_s"
+    ],
+    "statement": "For a first-order RC network made from a nominal 10 k\u03a9 resistor and nominal 100 nF capacitor, the time constant tau=RC has nominal value 1 ms; using independent 1% resistor and 10% capacitor tolerances gives a LogNormal prior on tau in seconds with log-space mu -6.9078 and sigma 0.034.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -6.9078,
+      "sigma": 0.034,
+      "units": "s"
+    },
+    "source": "Alexander and Sadiku, Fundamentals of Electric Circuits, first-order circuits chapter; IEC 60115 and IEC 60384 component tolerance references",
+    "confidence": "high"
+  },
+  {
+    "id": "ce_capacitor_charge_fraction_one_tau",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "capacitor charging",
+      "rc transient",
+      "normalized voltage",
+      "time constant"
+    ],
+    "vars_involved": [
+      "v_c_over_v_final_dimensionless"
+    ],
+    "statement": "In an ideal capacitor charging step of a first-order RC circuit, the normalized capacitor voltage after one time constant is 1 - exp(-1) \u2248 0.632; a Beta(632, 368) prior gives a tight distribution for the observed fraction v_C/V_final with mean 0.632 and standard deviation about 0.015.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 632.0,
+      "beta": 368.0,
+      "units": "dimensionless"
+    },
+    "source": "Alexander and Sadiku, Fundamentals of Electric Circuits, first-order RC transient response chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "ce_equal_resistor_divider_fraction",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "voltage divider",
+      "resistor network",
+      "output ratio",
+      "tolerance"
+    ],
+    "vars_involved": [
+      "v_out_over_v_in_dimensionless"
+    ],
+    "statement": "For an unloaded voltage divider made from two independent nominally equal 5% resistors, the output ratio v_out/v_in is centered at 0.5; Beta(1200, 1200) approximates the spread from uniform-like 5% resistor tolerances, with standard deviation about 0.010.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 1200.0,
+      "beta": 1200.0,
+      "units": "dimensionless"
+    },
+    "source": "Alexander and Sadiku, Fundamentals of Electric Circuits, voltage divider rule; IEC 60115 fixed-resistor tolerance classes",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_johnson_noise_magnitude_1k_1hz",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "thermal noise",
+      "johnson noise",
+      "resistor",
+      "noise voltage"
+    ],
+    "vars_involved": [
+      "absolute_thermal_noise_voltage_V"
+    ],
+    "statement": "At 300 K, the band-limited thermal-noise voltage sample across a 1 k\u03a9 resistor in a 1 Hz bandwidth is zero-mean Gaussian with rms sqrt(4 k T R B); therefore its absolute magnitude can be modeled as HalfNormal with sigma 4.07e-9 V.",
+    "formal": {
+      "distribution": "HalfNormal",
+      "sigma": 4.07e-09,
+      "units": "V"
+    },
+    "source": "Horowitz and Hill, The Art of Electronics, 3rd ed., noise chapter; Johnson-Nyquist thermal-noise formula as presented in standard circuit texts",
+    "confidence": "high"
+  },
+  {
+    "id": "ce_rlc_resonant_frequency_10mh_100nf",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "rlc circuit",
+      "resonance",
+      "inductor",
+      "capacitor"
+    ],
+    "vars_involved": [
+      "resonant_frequency_Hz"
+    ],
+    "statement": "For an ideal series or parallel RLC circuit with nominal L=10 mH and C=100 nF, the undamped resonant frequency f0=1/(2*pi*sqrt(LC)) is about 5033 Hz; a LogNormal prior with log-space mu 8.5238 and sigma 0.024 reflects independent 10% L and C tolerances treated as about three-sigma ranges.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 8.5238,
+      "sigma": 0.024,
+      "units": "Hz"
+    },
+    "source": "Nilsson and Riedel, Electric Circuits, second-order RLC circuits and resonance chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "ce_series_rlc_quality_factor_10ohm_10mh_100nf",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "rlc circuit",
+      "quality factor",
+      "damping",
+      "resonance"
+    ],
+    "vars_involved": [
+      "series_rlc_quality_factor_dimensionless"
+    ],
+    "statement": "For a series RLC circuit with nominal R=10 ohm, L=10 mH, and C=100 nF, the ideal quality factor Q=(1/R)*sqrt(L/C) is about 31.6; a LogNormal prior with log-space mu 3.4539 and sigma 0.05 allows modest resistor, inductor, capacitor, and parasitic-loss variation.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 3.4539,
+      "sigma": 0.05,
+      "units": "dimensionless"
+    },
+    "source": "Nilsson and Riedel, Electric Circuits, second-order RLC response and quality-factor discussion",
+    "confidence": "medium"
+  },
+  {
+    "id": "ce_100uf_16v_electrolytic_leakage_current",
+    "domain": "circuits_electronics",
+    "keywords": [
+      "capacitor leakage",
+      "electrolytic capacitor",
+      "leakage current",
+      "rc circuits"
+    ],
+    "vars_involved": [
+      "capacitor_leakage_current_A"
+    ],
+    "statement": "For a general-purpose 100 \u00b5F, 16 V aluminum electrolytic capacitor after the specified settling time at rated voltage and room temperature, leakage current is positive and right-skewed; a shape-rate Gamma prior with alpha 2.0 and beta 200000.0 has mean 10 \u00b5A and standard deviation about 7 \u00b5A, comparable to common 0.01CV-style leakage limits.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 2.0,
+      "beta": 200000.0,
+      "units": "A"
+    },
+    "source": "IEC 60384-4, Fixed capacitors for use in electronic equipment: aluminum electrolytic capacitors; Horowitz and Hill, The Art of Electronics, 3rd ed., capacitor leakage discussion",
+    "confidence": "low"
+  }
+]

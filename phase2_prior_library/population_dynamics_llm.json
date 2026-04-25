@@ -1,0 +1,221 @@
+[
+  {
+    "id": "pd_ungulate_rmax_lognormal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "logistic_growth",
+      "intrinsic_growth_rate",
+      "ungulates",
+      "r_max"
+    ],
+    "vars_involved": [
+      "r_max (yr^-1)"
+    ],
+    "statement": "For a logistic-growth model of large-bodied terrestrial herbivores, r_max is the low-density intrinsic per-capita rate of increase. A LogNormal prior with log-scale mu=-1.609 and sigma=0.50 has median about 0.20 yr^-1 and places most mass on roughly 0.08-0.53 yr^-1, matching the slow-to-moderate maximum growth commonly used for ungulate populations.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -1.609,
+      "sigma": 0.5,
+      "units": "yr^-1"
+    },
+    "source": "Caughley, Analysis of Vertebrate Populations; Sinclair, Fryxell & Caughley, Wildlife Ecology, Conservation, and Management",
+    "confidence": "medium"
+  },
+  {
+    "id": "pd_ungulate_k_density_lognormal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "carrying_capacity",
+      "population_density",
+      "ungulates",
+      "logistic_growth"
+    ],
+    "vars_involved": [
+      "K_density (individuals km^-2)"
+    ],
+    "statement": "For a homogeneous temperate range supporting large grazing ungulates, K_density is the carrying capacity expressed as animals per square kilometer. A LogNormal prior with log-scale mu=2.303 and sigma=0.80 has median about 10 individuals km^-2 and is intentionally broad for habitat quality variation.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 2.303,
+      "sigma": 0.8,
+      "units": "individuals km^-2"
+    },
+    "source": "Caughley, Analysis of Vertebrate Populations; Damuth's mammalian population-density allometry",
+    "confidence": "low"
+  },
+  {
+    "id": "pd_stationary_log_growth_normal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "annual_growth",
+      "log_growth_rate",
+      "stochastic_population",
+      "equilibrium"
+    ],
+    "vars_involved": [
+      "g_t_log_population_growth (yr^-1)"
+    ],
+    "statement": "For an animal population believed to be near a stationary equilibrium or carrying capacity, the realized one-year log growth g_t=log(N_{t+1}/N_t) is commonly centered near zero. A Normal prior or observation-scale model with mu=0 and sigma=0.20 yr^-1 allows typical annual multipliers of about exp(plus or minus 0.4) across a 95% range.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0,
+      "sigma": 0.2,
+      "units": "log ratio yr^-1"
+    },
+    "source": "Morris & Doak, Quantitative Conservation Biology; Gotelli, A Primer of Ecology",
+    "confidence": "medium"
+  },
+  {
+    "id": "pd_environmental_log_growth_sd_halfnormal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "environmental_stochasticity",
+      "process_noise",
+      "population_projection",
+      "log_growth"
+    ],
+    "vars_involved": [
+      "sigma_env_log_growth (yr^-1)"
+    ],
+    "statement": "In stochastic population projections, sigma_env is the nonnegative standard deviation of annual environmental deviations in log population growth. A HalfNormal prior with sigma=0.25 yr^-1 is weakly informative for vertebrate monitoring data, favoring modest year-to-year variation while allowing larger environmental variability.",
+    "formal": {
+      "distribution": "HalfNormal",
+      "sigma": 0.25,
+      "units": "log-growth SD yr^-1"
+    },
+    "source": "Morris & Doak, Quantitative Conservation Biology",
+    "confidence": "medium"
+  },
+  {
+    "id": "pd_large_mammal_adult_survival_beta",
+    "domain": "population_dynamics",
+    "keywords": [
+      "survival",
+      "adult_survival",
+      "large_mammals",
+      "matrix_models"
+    ],
+    "vars_involved": [
+      "S_adult (annual probability)"
+    ],
+    "statement": "For long-lived large mammals in an age-structured population model, adult annual survival is usually high and less variable than recruitment. A Beta(45,5) prior has mean 0.90 and moderate concentration, representing the canonical high adult survival used in large-herbivore life-table analyses.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 45,
+      "beta": 5,
+      "units": "annual probability"
+    },
+    "source": "Caswell, Matrix Population Models; Gaillard et al., large-herbivore demography review",
+    "confidence": "high"
+  },
+  {
+    "id": "pd_fish_natural_mortality_gamma",
+    "domain": "population_dynamics",
+    "keywords": [
+      "death_rate",
+      "natural_mortality",
+      "fisheries",
+      "survival"
+    ],
+    "vars_involved": [
+      "M_natural (yr^-1)"
+    ],
+    "statement": "In fish population dynamics, M is the instantaneous natural mortality rate excluding fishing. A Gamma prior with alpha=4 and beta=8 in shape-rate form has mean 0.50 yr^-1 and standard deviation 0.25 yr^-1, a conventional scale for many small-to-medium fish stocks when species-specific estimates are unavailable.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 4,
+      "beta": 8,
+      "units": "yr^-1"
+    },
+    "source": "Beverton & Holt, On the Dynamics of Exploited Fish Populations; Pauly's empirical natural-mortality synthesis",
+    "confidence": "medium"
+  },
+  {
+    "id": "pd_holling_attack_rate_lognormal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "predator_prey",
+      "holling_type_II",
+      "attack_rate",
+      "functional_response"
+    ],
+    "vars_involved": [
+      "a_attack (L predator^-1 day^-1)"
+    ],
+    "statement": "For a small aquatic predator-prey system fit with a Holling type-II functional response, a_attack is the search or attack coefficient when prey density is measured per liter and time in days. A LogNormal prior with log-scale mu=-2.303 and sigma=1.00 has median 0.10 L predator^-1 day^-1 and deliberately wide uncertainty for differences among taxa and arenas.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -2.303,
+      "sigma": 1,
+      "units": "L predator^-1 day^-1"
+    },
+    "source": "Holling, Principles of Animal Predation; Begon, Townsend & Harper, Ecology: From Individuals to Ecosystems",
+    "confidence": "low"
+  },
+  {
+    "id": "pd_holling_handling_time_lognormal",
+    "domain": "population_dynamics",
+    "keywords": [
+      "predator_prey",
+      "holling_type_II",
+      "handling_time",
+      "functional_response"
+    ],
+    "vars_involved": [
+      "h_handling (days prey^-1)"
+    ],
+    "statement": "For the same style of small predator-prey functional-response model, h_handling is the time a predator spends capturing, consuming, and digesting one prey item. A LogNormal prior with log-scale mu=-3.178 and sigma=0.70 has median about 0.0417 days per prey, or one hour per prey, with broad multiplicative variation.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -3.178,
+      "sigma": 0.7,
+      "units": "days prey^-1"
+    },
+    "source": "Holling, Principles of Animal Predation; Begon, Townsend & Harper, Ecology: From Individuals to Ecosystems",
+    "confidence": "low"
+  },
+  {
+    "id": "pd_predator_conversion_efficiency_beta",
+    "domain": "population_dynamics",
+    "keywords": [
+      "predator_prey",
+      "conversion_efficiency",
+      "bioenergetics",
+      "consumer_resource"
+    ],
+    "vars_involved": [
+      "e_conversion (dimensionless fraction)"
+    ],
+    "statement": "In consumer-resource or Lotka-Volterra-type predator-prey models, e_conversion is the fraction of consumed prey biomass converted into predator biomass or offspring. A Beta(3,7) prior has mean 0.30 and supports the common ecological expectation that conversion efficiency is positive but well below one.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 3,
+      "beta": 7,
+      "units": "dimensionless fraction"
+    },
+    "source": "Yodzis & Innes body-size consumer-resource model; Sibly, Brown & Kodric-Brown, Metabolic Ecology",
+    "confidence": "medium"
+  },
+  {
+    "id": "pd_allee_threshold_fraction_beta",
+    "domain": "population_dynamics",
+    "keywords": [
+      "allee_effect",
+      "threshold",
+      "logistic_growth",
+      "low_density"
+    ],
+    "vars_involved": [
+      "A_over_K (fraction of carrying capacity)"
+    ],
+    "statement": "For a single-species growth model with a strong Allee effect, A_over_K is the critical abundance threshold expressed as a fraction of carrying capacity. A Beta(2,8) prior has mean 0.20 and keeps most mass below one-half of K, appropriate when the threshold is believed to occur at relatively low density but is poorly known.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 2,
+      "beta": 8,
+      "units": "fraction of carrying capacity"
+    },
+    "source": "Courchamp, Berec & Gascoigne, Allee Effects in Ecology and Conservation",
+    "confidence": "low"
+  }
+]

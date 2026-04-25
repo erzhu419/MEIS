@@ -1,0 +1,244 @@
+[
+  {
+    "id": "psych_cog_ebbinghaus_24h_savings",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "memory",
+      "forgetting_curve",
+      "retention",
+      "savings",
+      "verbal_learning"
+    ],
+    "vars_involved": [
+      "savings_after_24h_proportion"
+    ],
+    "statement": "For newly learned, low-meaning verbal material, a reasonable prior for the proportion of original learning saved after a 24-hour delay is centered near one third, reflecting the classic rapid early decline in the Ebbinghaus forgetting curve.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 8,
+      "beta": 16,
+      "units": "proportion"
+    },
+    "source": "Ebbinghaus, Memory: A Contribution to Experimental Psychology (1885/1913)",
+    "confidence": "medium"
+  },
+  {
+    "id": "psych_cog_verbal_forgetting_rate_day",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "memory_decay",
+      "forgetting_rate",
+      "exponential_decay",
+      "delayed_recall"
+    ],
+    "vars_involved": [
+      "exponential_forgetting_rate_per_day"
+    ],
+    "statement": "For a simple exponential forgetting model applied to unfamiliar verbal associations, the decay-rate constant can be given a prior centered around 0.5 per day, corresponding to a memory half-life on the order of one to two days for unsupported recall.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 2,
+      "beta": 4,
+      "units": "1/day"
+    },
+    "source": "Rubin and Wenzel's review of empirical retention functions",
+    "confidence": "medium"
+  },
+  {
+    "id": "psych_cog_power_forgetting_exponent",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "forgetting_curve",
+      "power_law",
+      "retention",
+      "memory_decay"
+    ],
+    "vars_involved": [
+      "power_law_forgetting_exponent_dimensionless"
+    ],
+    "statement": "For power-law forgetting models of the form retention proportional to time raised to a negative exponent, a prior median near 0.20 captures the common finding that retention declines steeply at first and then more slowly over time.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -1.609,
+      "sigma": 0.45,
+      "units": "dimensionless exponent"
+    },
+    "source": "Wickelgren's power-law account of memory strength and Rubin and Wenzel's retention-function review",
+    "confidence": "medium"
+  },
+  {
+    "id": "psych_cog_spacing_benefit_ratio",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "distributed_practice",
+      "spacing_effect",
+      "learning",
+      "delayed_recall"
+    ],
+    "vars_involved": [
+      "spaced_vs_massed_delayed_recall_ratio"
+    ],
+    "statement": "For delayed recall of verbal material, the benefit ratio for spaced practice relative to massed practice is typically greater than one; a prior median around 1.6 reflects the robust distributed-practice effect found across many laboratory learning tasks.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0.47,
+      "sigma": 0.3,
+      "units": "unitless ratio"
+    },
+    "source": "Cepeda et al.'s distributed-practice meta-analysis",
+    "confidence": "high"
+  },
+  {
+    "id": "psych_cog_rescorla_wagner_alpha",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "associative_learning",
+      "learning_rate",
+      "rescorla_wagner",
+      "reinforcement_learning"
+    ],
+    "vars_involved": [
+      "rescorla_wagner_learning_rate_unitless"
+    ],
+    "statement": "For trial-by-trial associative learning models, the Rescorla-Wagner learning-rate parameter is constrained between zero and one and is often expected to be modest rather than near one; this prior centers it near 0.25.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 2,
+      "beta": 6,
+      "units": "unitless probability-scale rate"
+    },
+    "source": "Rescorla-Wagner associative learning model; Sutton and Barto, Reinforcement Learning: An Introduction",
+    "confidence": "medium"
+  },
+  {
+    "id": "psych_cog_practice_rt_power_exponent",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "skill_learning",
+      "practice_effect",
+      "reaction_time",
+      "power_law_of_practice"
+    ],
+    "vars_involved": [
+      "reaction_time_practice_power_exponent_dimensionless"
+    ],
+    "statement": "For decreases in reaction time with repeated practice, a power-law exponent with median near 0.30 is a common prior anchor, reflecting the classic power law of practice in perceptual-motor and cognitive tasks.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -1.204,
+      "sigma": 0.3,
+      "units": "dimensionless exponent"
+    },
+    "source": "Newell and Rosenbloom's power law of practice chapter",
+    "confidence": "high"
+  },
+  {
+    "id": "psych_cog_simple_visual_rt",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "reaction_time",
+      "simple_rt",
+      "visual_detection",
+      "lognormal"
+    ],
+    "vars_involved": [
+      "simple_visual_reaction_time_ms"
+    ],
+    "statement": "For healthy adults making a simple keypress response to a clearly detectable visual stimulus, reaction times are positive and right-skewed; a lognormal prior with median about 250 ms is a standard anchor.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 5.521,
+      "sigma": 0.25,
+      "units": "ms"
+    },
+    "source": "Luce, Response Times, and Welford's standard treatment of human reaction time",
+    "confidence": "high"
+  },
+  {
+    "id": "psych_cog_simple_rt_within_subject_sd",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "reaction_time_variability",
+      "simple_rt",
+      "within_subject_sd",
+      "hierarchical_model"
+    ],
+    "vars_involved": [
+      "within_subject_simple_rt_sd_ms"
+    ],
+    "statement": "For a hierarchical model of simple reaction times, the within-participant standard deviation of trial-level simple RTs is a positive quantity often on the order of tens of milliseconds; a half-normal prior with scale 80 ms is a weakly informative anchor.",
+    "formal": {
+      "distribution": "HalfNormal",
+      "sigma": 80,
+      "units": "ms"
+    },
+    "source": "Luce, Response Times",
+    "confidence": "medium"
+  },
+  {
+    "id": "psych_cog_two_choice_rt",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "reaction_time",
+      "choice_rt",
+      "decision_making",
+      "two_alternative_forced_choice"
+    ],
+    "vars_involved": [
+      "two_choice_reaction_time_ms"
+    ],
+    "statement": "For healthy adults in a basic two-choice decision task with speed and accuracy both emphasized, response times are typically right-skewed with a median around 500 to 600 ms; this lognormal prior centers the median at 550 ms.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 6.31,
+      "sigma": 0.3,
+      "units": "ms"
+    },
+    "source": "Ratcliff and McKoon's diffusion decision model review; Luce, Response Times",
+    "confidence": "high"
+  },
+  {
+    "id": "psych_cog_stroop_interference",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "stroop_effect",
+      "selective_attention",
+      "reaction_time",
+      "interference"
+    ],
+    "vars_involved": [
+      "stroop_incongruent_minus_congruent_rt_ms"
+    ],
+    "statement": "For standard color-word Stroop tasks, the reaction-time cost for incongruent relative to congruent trials is commonly positive and often around several dozen milliseconds; a normal prior centered at 80 ms captures this canonical interference effect.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 80,
+      "sigma": 35,
+      "units": "ms"
+    },
+    "source": "MacLeod's standard review of the Stroop effect",
+    "confidence": "high"
+  },
+  {
+    "id": "psych_cog_stop_signal_rt",
+    "domain": "psychology_cognitive",
+    "keywords": [
+      "response_inhibition",
+      "stop_signal_task",
+      "reaction_time",
+      "ssrt"
+    ],
+    "vars_involved": [
+      "stop_signal_reaction_time_ms"
+    ],
+    "statement": "For healthy adults in the stop-signal task, the latent stop-signal reaction time is commonly estimated around 200 to 250 ms; a normal prior centered at 220 ms is a standard anchor for response-inhibition models.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 220,
+      "sigma": 40,
+      "units": "ms"
+    },
+    "source": "Logan and Cowan's stop-signal model and standard stop-signal task reviews",
+    "confidence": "high"
+  }
+]

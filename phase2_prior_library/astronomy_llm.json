@@ -1,0 +1,265 @@
+[
+  {
+    "id": "astro_solar_bolometric_magnitude",
+    "domain": "astronomy",
+    "keywords": [
+      "stellar luminosity",
+      "Sun",
+      "bolometric magnitude",
+      "calibration"
+    ],
+    "vars_involved": [
+      "M_bol_sun [mag]"
+    ],
+    "statement": "The Sun's absolute bolometric magnitude is conventionally centered at about 4.74 mag. As a tight calibration prior for stellar-luminosity work, model M_bol_sun with a Normal distribution whose small width represents practical calibration uncertainty around the IAU bolometric zero point.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 4.74,
+      "sigma": 0.01,
+      "units": "mag"
+    },
+    "source": "IAU 2015 Resolution B2/B3 on bolometric magnitude zero points and nominal solar luminosity",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_rr_lyrae_mv_metal_poor",
+    "domain": "astronomy",
+    "keywords": [
+      "stellar luminosity",
+      "RR Lyrae",
+      "absolute magnitude",
+      "standard candle"
+    ],
+    "vars_involved": [
+      "M_V_RR_Lyrae_at_FeH_minus_1p5 [mag]"
+    ],
+    "statement": "For old, metal-poor RR Lyrae stars near [Fe/H] = -1.5, a common visual absolute-magnitude calibration is approximately 0.60 mag. A Normal prior with 0.10 mag width captures metallicity, evolutionary, and calibration scatter for distance-scale applications.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.6,
+      "sigma": 0.1,
+      "units": "mag"
+    },
+    "source": "Catelan & Smith, Pulsating Stars, standard RR Lyrae calibration review",
+    "confidence": "medium"
+  },
+  {
+    "id": "astro_cepheid_10d_mv",
+    "domain": "astronomy",
+    "keywords": [
+      "stellar luminosity",
+      "Cepheid",
+      "period-luminosity relation",
+      "standard candle"
+    ],
+    "vars_involved": [
+      "M_V_Cepheid_P10d [mag]"
+    ],
+    "statement": "For a fundamental-mode classical Cepheid with orbital pulsation period P = 10 days, equivalently log10 P = 1, the visual absolute magnitude is about -4.05 mag. The stated Normal width covers intrinsic instability-strip scatter, metallicity effects, and calibration uncertainty.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": -4.05,
+      "sigma": 0.12,
+      "units": "mag"
+    },
+    "source": "Freedman & Madore review of Cepheid period-luminosity calibration and the HST Key Project distance scale",
+    "confidence": "medium"
+  },
+  {
+    "id": "astro_main_sequence_mass_luminosity_exponent",
+    "domain": "astronomy",
+    "keywords": [
+      "stellar luminosity",
+      "main sequence",
+      "mass-luminosity relation"
+    ],
+    "vars_involved": [
+      "alpha_mass_luminosity_relation [dimensionless]"
+    ],
+    "statement": "For roughly solar-type main-sequence stars, about 0.5 to 2 solar masses, the textbook scaling L/L_sun approximately equals (M/M_sun)^alpha. A Normal prior centered on alpha = 3.5 with width 0.5 is appropriate for approximate stellar-population modeling.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 3.5,
+      "sigma": 0.5,
+      "units": "dimensionless"
+    },
+    "source": "Carroll & Ostlie, An Introduction to Modern Astrophysics",
+    "confidence": "medium"
+  },
+  {
+    "id": "astro_solar_type_binary_orbital_period",
+    "domain": "astronomy",
+    "keywords": [
+      "orbital period",
+      "binary stars",
+      "solar-type stars",
+      "multiplicity"
+    ],
+    "vars_involved": [
+      "P_solar_type_binary [day]"
+    ],
+    "statement": "For field solar-type binary systems, the empirical orbital-period distribution is well approximated by log10(P/day) following Normal(5.03, 2.28). In PyMC's natural-log LogNormal parameterization, this corresponds to P in days following LogNormal(mu = 11.58, sigma = 5.25).",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 11.58,
+      "sigma": 5.25,
+      "units": "day"
+    },
+    "source": "Raghavan et al. nearby solar-type stellar multiplicity survey",
+    "confidence": "medium"
+  },
+  {
+    "id": "astro_hot_jupiter_orbital_period",
+    "domain": "astronomy",
+    "keywords": [
+      "orbital period",
+      "hot Jupiter",
+      "exoplanet",
+      "period pile-up"
+    ],
+    "vars_involved": [
+      "P_hot_jupiter [day]"
+    ],
+    "statement": "For close-in giant exoplanets classified as hot Jupiters, the observed period pile-up is near 3 days. A LogNormal prior on P in days with natural-log parameters mu = 1.10 and sigma = 0.45 concentrates most probability between roughly 2 and 5 days while allowing a broader hot-Jupiter tail.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 1.1,
+      "sigma": 0.45,
+      "units": "day"
+    },
+    "source": "Winn & Fabrycky review of exoplanet architectures and hot-Jupiter period distributions",
+    "confidence": "medium"
+  },
+  {
+    "id": "astro_earth_sidereal_period",
+    "domain": "astronomy",
+    "keywords": [
+      "orbital period",
+      "Earth",
+      "sidereal year",
+      "solar system"
+    ],
+    "vars_involved": [
+      "P_Earth_sidereal [day]"
+    ],
+    "statement": "The Earth's sidereal orbital period around the Sun is tightly known at approximately 365.25636 days. For ephemeris-level probabilistic modeling where the period is represented as a stochastic parameter, a very narrow Normal prior is appropriate.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 365.25636,
+      "sigma": 1e-05,
+      "units": "day"
+    },
+    "source": "The Astronomical Almanac, standard solar-system ephemeris reference",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_lmc_distance_modulus",
+    "domain": "astronomy",
+    "keywords": [
+      "distance modulus",
+      "Large Magellanic Cloud",
+      "extragalactic distance",
+      "standard candle"
+    ],
+    "vars_involved": [
+      "mu_LMC_true [mag]"
+    ],
+    "statement": "The extinction-corrected true distance modulus of the Large Magellanic Cloud is tightly anchored by detached eclipsing binaries. A practical prior for distance-ladder work is Normal with mean 18.477 mag and standard deviation 0.026 mag.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 18.477,
+      "sigma": 0.026,
+      "units": "mag"
+    },
+    "source": "Pietrzynski et al. detached-eclipsing-binary distance to the Large Magellanic Cloud",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_m31_distance_modulus",
+    "domain": "astronomy",
+    "keywords": [
+      "distance modulus",
+      "M31",
+      "Andromeda",
+      "Local Group"
+    ],
+    "vars_involved": [
+      "mu_M31_true [mag]"
+    ],
+    "statement": "The true distance modulus to M31, the Andromeda Galaxy, is commonly taken near 24.47 mag, corresponding to a distance of about 785 kpc. A Normal prior with 0.07 mag width captures the standard Local Group distance-scale uncertainty.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 24.47,
+      "sigma": 0.07,
+      "units": "mag"
+    },
+    "source": "McConnachie 2012 Local Group galaxy properties review",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_galactic_center_distance_modulus",
+    "domain": "astronomy",
+    "keywords": [
+      "distance modulus",
+      "Galactic center",
+      "Sgr A*",
+      "Milky Way"
+    ],
+    "vars_involved": [
+      "mu_Galactic_center_true [mag]"
+    ],
+    "statement": "The distance modulus corresponding to the modern Galactic-center distance R0 near 8.18 kpc is about 14.56 mag. A Normal prior with 0.03 mag width captures contemporary S-star orbital constraints and residual systematic uncertainty.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 14.56,
+      "sigma": 0.03,
+      "units": "mag"
+    },
+    "source": "GRAVITY Collaboration Galactic-center distance measurements from S2 and other S-star orbits",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_hyades_distance_modulus",
+    "domain": "astronomy",
+    "keywords": [
+      "distance modulus",
+      "Hyades",
+      "open cluster",
+      "parallax calibration"
+    ],
+    "vars_involved": [
+      "mu_Hyades_true [mag]"
+    ],
+    "statement": "The Hyades open cluster is a nearby distance-ladder calibrator with true distance modulus close to 3.33 mag. Hipparcos and Gaia parallax work support a tight Normal prior with 0.02 mag standard deviation.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 3.33,
+      "sigma": 0.02,
+      "units": "mag"
+    },
+    "source": "Perryman et al. Hipparcos Hyades distance calibration, standard open-cluster parallax reference",
+    "confidence": "high"
+  },
+  {
+    "id": "astro_hubble_constant_planck_lcdm",
+    "domain": "astronomy",
+    "keywords": [
+      "Hubble constant",
+      "cosmology",
+      "Lambda-CDM",
+      "CMB"
+    ],
+    "vars_involved": [
+      "H0 [km s^-1 Mpc^-1]"
+    ],
+    "statement": "Under the flat Lambda-CDM model fitted to cosmic microwave background anisotropy data, the Hubble constant is about 67.4 km s^-1 Mpc^-1. This is a Planck-like cosmology prior rather than a method-agnostic consensus prior, because of the well-known Hubble-tension literature.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 67.4,
+      "sigma": 0.5,
+      "units": "km s^-1 Mpc^-1"
+    },
+    "source": "Planck Collaboration 2018 cosmological-parameters release",
+    "confidence": "medium"
+  }
+]

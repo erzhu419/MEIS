@@ -1,0 +1,266 @@
+[
+  {
+    "id": "classical_gravity_surface_earth",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "gravity",
+      "acceleration",
+      "weight",
+      "earth"
+    ],
+    "vars_involved": [
+      "local_gravitational_acceleration_m_per_s2"
+    ],
+    "statement": "For mechanics problems near Earth's surface, local gravitational acceleration can be modeled as centered on standard gravity with small site-to-site variation from latitude and altitude.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 9.80665,
+      "sigma": 0.03,
+      "units": "m/s^2"
+    },
+    "source": "NIST/CODATA standard gravity reference; Halliday, Resnick and Walker, Fundamentals of Physics.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_air_density_sea_level",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "projectile_motion",
+      "drag",
+      "air_density",
+      "standard_atmosphere"
+    ],
+    "vars_involved": [
+      "sea_level_air_density_kg_per_m3"
+    ],
+    "statement": "For projectile and drag calculations near sea level under ordinary standard-atmosphere conditions, dry-air density is well anchored near 1.225 kg/m^3 with moderate weather-related variation.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 1.225,
+      "sigma": 0.05,
+      "units": "kg/m^3"
+    },
+    "source": "U.S. Standard Atmosphere, 1976.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_air_dynamic_viscosity",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "projectile_motion",
+      "drag",
+      "viscosity",
+      "air"
+    ],
+    "vars_involved": [
+      "air_dynamic_viscosity_Pa_s"
+    ],
+    "statement": "For room-temperature projectile-drag modeling in air, dynamic viscosity is positive and tightly concentrated around the standard dry-air value; the LogNormal parameters are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -10.931,
+      "sigma": 0.04,
+      "units": "Pa*s"
+    },
+    "source": "CRC Handbook of Chemistry and Physics, properties of dry air near 1 atm.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_smooth_sphere_drag_coefficient",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "drag",
+      "projectile_motion",
+      "sphere",
+      "dimensionless_coefficient"
+    ],
+    "vars_involved": [
+      "smooth_sphere_drag_coefficient_dimensionless"
+    ],
+    "statement": "For a smooth sphere moving through air in the Newtonian drag regime, roughly Reynolds number 10^3 to 2e5, the drag coefficient is conventionally near 0.47; the LogNormal parameters are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -0.755,
+      "sigma": 0.12,
+      "units": "dimensionless"
+    },
+    "source": "Munson, Young and Okiishi, Fundamentals of Fluid Mechanics, sphere drag-coefficient charts.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_baseball_mass",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "mass",
+      "projectile_motion",
+      "baseball",
+      "sports_physics"
+    ],
+    "vars_involved": [
+      "regulation_baseball_mass_kg"
+    ],
+    "statement": "For a regulation baseball treated as a projectile, mass is tightly constrained by official equipment specifications and is well represented by a narrow Normal prior centered near 145 g.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.145,
+      "sigma": 0.002,
+      "units": "kg"
+    },
+    "source": "Official Baseball Rules, baseball weight specification.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_carbon_steel_density",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "mass",
+      "density",
+      "steel",
+      "inertia"
+    ],
+    "vars_involved": [
+      "carbon_steel_density_kg_per_m3"
+    ],
+    "statement": "For mechanics models involving ordinary carbon-steel parts, density is commonly tabulated around 7850 kg/m^3 with modest alloy-to-alloy variation.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 7850,
+      "sigma": 100,
+      "units": "kg/m^3"
+    },
+    "source": "CRC Handbook of Chemistry and Physics; Callister and Rethwisch, Materials Science and Engineering: An Introduction.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_simple_pendulum_1m_period",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "pendulum",
+      "oscillation",
+      "period",
+      "gravity"
+    ],
+    "vars_involved": [
+      "one_meter_small_angle_pendulum_period_s"
+    ],
+    "statement": "For a simple pendulum of length 1.000 m at small amplitude near Earth's surface, the period follows the standard small-angle expression and is close to 2.006 s, with small variation dominated by local gravity.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 2.006,
+      "sigma": 0.003,
+      "units": "s"
+    },
+    "source": "Halliday, Resnick and Walker, Fundamentals of Physics, simple pendulum treatment.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_passenger_car_suspension_rate",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "spring",
+      "vehicle_dynamics",
+      "stiffness",
+      "oscillation"
+    ],
+    "vars_involved": [
+      "passenger_car_suspension_vertical_spring_rate_N_per_m"
+    ],
+    "statement": "For a typical passenger-car quarter-car vertical suspension model, an effective wheel spring rate around 25 kN/m is a reasonable prior scale; the Gamma uses PyMC's alpha-rate beta parameterization.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 25,
+      "beta": 0.001,
+      "units": "N/m"
+    },
+    "source": "Gillespie, Fundamentals of Vehicle Dynamics, ride frequency and suspension stiffness ranges.",
+    "confidence": "medium"
+  },
+  {
+    "id": "classical_steel_youngs_modulus",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "spring",
+      "elasticity",
+      "youngs_modulus",
+      "steel"
+    ],
+    "vars_involved": [
+      "youngs_modulus_steel_Pa"
+    ],
+    "statement": "For linear-elastic calculations of ordinary steel springs or beams, Young's modulus is conventionally near 200 GPa, with modest variation across common steel grades.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 200000000000,
+      "sigma": 10000000000,
+      "units": "Pa"
+    },
+    "source": "Callister and Rethwisch, Materials Science and Engineering: An Introduction; CRC materials property tables.",
+    "confidence": "high"
+  },
+  {
+    "id": "classical_wood_wood_kinetic_friction",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "friction",
+      "kinetic_friction",
+      "wood",
+      "dimensionless_coefficient"
+    ],
+    "vars_involved": [
+      "kinetic_friction_coefficient_dry_wood_on_wood_dimensionless"
+    ],
+    "statement": "For dry wood sliding on dry wood in introductory mechanics problems, the kinetic friction coefficient is usually taken to be around 0.3, but surface finish and grain direction justify a moderately broad bounded prior.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 12,
+      "beta": 28,
+      "units": "dimensionless"
+    },
+    "source": "Hibbeler, Engineering Mechanics: Statics, tables of dry friction coefficients.",
+    "confidence": "medium"
+  },
+  {
+    "id": "classical_tire_asphalt_rolling_resistance",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "rolling_resistance",
+      "friction",
+      "vehicle_dynamics",
+      "dimensionless_coefficient"
+    ],
+    "vars_involved": [
+      "passenger_tire_asphalt_rolling_resistance_coefficient_dimensionless"
+    ],
+    "statement": "For an inflated passenger-car tire rolling on asphalt, the rolling-resistance coefficient is positive and commonly near 0.01, with variation from tire construction, pressure, speed and road texture; the LogNormal parameters are on the natural-log scale.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -4.605,
+      "sigma": 0.25,
+      "units": "dimensionless"
+    },
+    "source": "Gillespie, Fundamentals of Vehicle Dynamics, rolling resistance coefficient ranges.",
+    "confidence": "medium"
+  },
+  {
+    "id": "classical_tennis_ball_restitution",
+    "domain": "classical_mechanics",
+    "keywords": [
+      "collision",
+      "coefficient_of_restitution",
+      "tennis_ball",
+      "impact"
+    ],
+    "vars_involved": [
+      "tennis_ball_coefficient_of_restitution_dimensionless"
+    ],
+    "statement": "For a regulation tennis ball in a standard rebound-style impact test, the effective coefficient of restitution is bounded between 0 and 1 and is centered near the value implied by official drop and rebound-height specifications.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 300,
+      "beta": 103,
+      "units": "dimensionless"
+    },
+    "source": "International Tennis Federation Rules of Tennis, ball rebound specification.",
+    "confidence": "high"
+  }
+]

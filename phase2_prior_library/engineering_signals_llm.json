@@ -1,0 +1,243 @@
+[
+  {
+    "id": "engsig_cd_audio_fs",
+    "domain": "engineering_signals",
+    "keywords": [
+      "audio",
+      "PCM",
+      "sampling_frequency",
+      "compact_disc"
+    ],
+    "vars_involved": [
+      "f_s_cd_audio_hz"
+    ],
+    "statement": "For a nominal compact-disc or CD-derived PCM audio stream, the sampling frequency is concentrated at the 44.1 kHz standard; this Normal prior represents small clock and nominal-rate uncertainty around the standard rather than variation across all audio formats.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 44100,
+      "sigma": 50,
+      "units": "Hz"
+    },
+    "source": "IEC 60908 Compact disc digital audio system standard; Pohlmann, Principles of Digital Audio",
+    "confidence": "high"
+  },
+  {
+    "id": "engsig_diagnostic_ecg_fs",
+    "domain": "engineering_signals",
+    "keywords": [
+      "ECG",
+      "biomedical_signal",
+      "sampling_frequency",
+      "diagnostic"
+    ],
+    "vars_involved": [
+      "f_s_diagnostic_ecg_hz"
+    ],
+    "statement": "For diagnostic electrocardiogram acquisition, digitizers are commonly operated around 500 Hz, with nearby standard choices such as 250 Hz and 1000 Hz also encountered; the LogNormal parameters are on the natural-log scale and center the prior at 500 Hz.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 6.214608,
+      "sigma": 0.35,
+      "units": "Hz"
+    },
+    "source": "IEC 60601-2-25 electrocardiograph standard; Webster, Medical Instrumentation: Application and Design",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_vibration_monitor_fs",
+    "domain": "engineering_signals",
+    "keywords": [
+      "vibration",
+      "condition_monitoring",
+      "FFT_analyzer",
+      "sampling_frequency"
+    ],
+    "vars_involved": [
+      "f_s_machinery_vibration_hz"
+    ],
+    "statement": "For industrial rotating-machinery vibration monitoring intended to capture bearing and gear fault content, sample rates in the tens of kilohertz are common; this LogNormal prior is centered at 25.6 kHz using natural-log-scale parameters.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 10.150348,
+      "sigma": 0.45,
+      "units": "Hz"
+    },
+    "source": "Randall, Vibration-based Condition Monitoring; ISO 18431 mechanical vibration signal-processing standards",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_audio_rc_lpf_tau",
+    "domain": "engineering_signals",
+    "keywords": [
+      "RC_filter",
+      "low_pass",
+      "time_constant",
+      "audio_band"
+    ],
+    "vars_involved": [
+      "tau_audio_rc_lowpass_s"
+    ],
+    "statement": "For a first-order analog RC low-pass or anti-alias pole placed near the audio-band edge of about 20 kHz, the corresponding time constant is approximately 1/(2*pi*20000) = 7.96 microseconds; this LogNormal prior uses natural-log-scale parameters to allow component tolerance and modest design variation.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -11.74136,
+      "sigma": 0.25,
+      "units": "s"
+    },
+    "source": "Horowitz & Hill, The Art of Electronics; Oppenheim & Schafer, Discrete-Time Signal Processing",
+    "confidence": "high"
+  },
+  {
+    "id": "engsig_process_transmitter_damping_tau",
+    "domain": "engineering_signals",
+    "keywords": [
+      "process_control",
+      "sensor_filtering",
+      "damping",
+      "time_constant"
+    ],
+    "vars_involved": [
+      "tau_process_transmitter_damping_s"
+    ],
+    "statement": "For industrial process transmitters and measurement channels with configurable first-order damping, a time constant on the order of 1 second is common; this Gamma prior uses PyMC's shape-rate parameterization with mean 1.0 s and standard deviation about 0.67 s.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 2.25,
+      "beta": 2.25,
+      "units": "s"
+    },
+    "source": "Liptak, Instrument Engineers' Handbook; Doebelin, Measurement Systems: Application and Design",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_antialias_cutoff_ratio",
+    "domain": "engineering_signals",
+    "keywords": [
+      "anti_alias_filter",
+      "normalized_frequency",
+      "Nyquist",
+      "low_pass"
+    ],
+    "vars_involved": [
+      "r_cutoff_to_nyquist"
+    ],
+    "statement": "For a discrete-time anti-alias or decimation low-pass design, the passband or effective cutoff is typically placed below Nyquist with transition-band margin; this Beta prior has mean 0.4 for the cutoff expressed as a fraction of the Nyquist frequency.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 8,
+      "beta": 12,
+      "units": "fraction_of_Nyquist"
+    },
+    "source": "Oppenheim & Schafer, Discrete-Time Signal Processing; Crochiere & Rabiner, Multirate Digital Signal Processing",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_adc12_ideal_snr",
+    "domain": "engineering_signals",
+    "keywords": [
+      "ADC",
+      "quantization_noise",
+      "SNR",
+      "12_bit"
+    ],
+    "vars_involved": [
+      "snr_ideal_12bit_adc_db"
+    ],
+    "statement": "For an ideal 12-bit ADC converting a full-scale sine wave with uncorrelated quantization noise, the canonical quantization-limited SNR is 6.02*N + 1.76 dB, giving about 74.0 dB; this Normal prior is expressed directly in dB space.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 74,
+      "sigma": 1,
+      "units": "dB"
+    },
+    "source": "Kester, The Data Conversion Handbook; IEEE Std 1241 terminology and test methods for analog-to-digital converters",
+    "confidence": "high"
+  },
+  {
+    "id": "engsig_gps_l1_open_sky_cn0",
+    "domain": "engineering_signals",
+    "keywords": [
+      "GNSS",
+      "GPS",
+      "carrier_to_noise_density",
+      "SNR"
+    ],
+    "vars_involved": [
+      "cn0_gps_l1_open_sky_dbhz"
+    ],
+    "statement": "For an open-sky GPS L1 C/A receiver with a consumer-to-survey-grade antenna, tracked carrier-to-noise-density ratios commonly lie in the high 30s to high 40s dB-Hz; this Normal prior is centered at 43 dB-Hz.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 43,
+      "sigma": 4,
+      "units": "dB-Hz"
+    },
+    "source": "Kaplan & Hegarty, Understanding GPS/GNSS: Principles and Applications",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_bpsk_awgn_ebn0_ber1e5",
+    "domain": "engineering_signals",
+    "keywords": [
+      "BPSK",
+      "AWGN",
+      "EbN0",
+      "bit_error_rate"
+    ],
+    "vars_involved": [
+      "ebn0_bpsk_ber_1e_minus_5_db"
+    ],
+    "statement": "For coherent uncoded BPSK in an additive white Gaussian noise channel, the textbook bit-error-rate relation gives a required Eb/N0 of about 9.6 dB at BER = 1e-5; the Normal prior allows small implementation and convention variation in dB space.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 9.6,
+      "sigma": 0.7,
+      "units": "dB"
+    },
+    "source": "Proakis & Salehi, Digital Communications; Sklar, Digital Communications: Fundamentals and Applications",
+    "confidence": "high"
+  },
+  {
+    "id": "engsig_adc_aperture_jitter",
+    "domain": "engineering_signals",
+    "keywords": [
+      "ADC",
+      "sampling_clock",
+      "aperture_jitter",
+      "SNR_degradation"
+    ],
+    "vars_involved": [
+      "sigma_aperture_jitter_s"
+    ],
+    "statement": "For a well-designed high-speed data-converter sampling clock, RMS aperture jitter is often on the sub-picosecond to picosecond scale and directly limits high-frequency SNR; this HalfNormal prior uses a 1 ps scale and enforces nonnegative jitter.",
+    "formal": {
+      "distribution": "HalfNormal",
+      "sigma": 1e-12,
+      "units": "s"
+    },
+    "source": "Kester, The Data Conversion Handbook; Analog Devices data-converter application notes on aperture jitter",
+    "confidence": "medium"
+  },
+  {
+    "id": "engsig_hann_window_enbw",
+    "domain": "engineering_signals",
+    "keywords": [
+      "FFT",
+      "spectral_estimation",
+      "window_function",
+      "equivalent_noise_bandwidth"
+    ],
+    "vars_involved": [
+      "enbw_hann_window_bins"
+    ],
+    "statement": "For FFT spectral estimation using a Hann window, the equivalent noise bandwidth is canonically about 1.5 DFT-bin widths; this Gamma prior uses PyMC's shape-rate parameterization and has mean 1.5 bins with standard deviation 0.05 bins for finite-length and convention uncertainty.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 900,
+      "beta": 600,
+      "units": "DFT_bin_widths"
+    },
+    "source": "Lyons, Understanding Digital Signal Processing; Harris, classic reference on FFT window functions",
+    "confidence": "high"
+  }
+]

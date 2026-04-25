@@ -1,0 +1,266 @@
+[
+  {
+    "id": "thermo_cp_water_liquid_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "heat_capacity",
+      "water",
+      "liquid",
+      "isobaric"
+    ],
+    "vars_involved": [
+      "cp_m_liquid_water_298K (J mol^-1 K^-1)"
+    ],
+    "statement": "For pure liquid water at 298.15 K and 1 atm, the molar isobaric heat capacity is tightly centered near 75.3 J mol^-1 K^-1. The Normal prior allows small departures due to temperature control, isotopic composition, and table interpolation, but is not intended for high-pressure or supercooled water.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 75.3,
+      "sigma": 0.8,
+      "units": "J mol^-1 K^-1"
+    },
+    "source": "CRC Handbook of Chemistry and Physics, thermophysical properties of water tables",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_cp_dry_air_300k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "heat_capacity",
+      "dry_air",
+      "ideal_gas",
+      "isobaric"
+    ],
+    "vars_involved": [
+      "cp_dry_air_300K (J kg^-1 K^-1)"
+    ],
+    "statement": "For dry air treated as an ideal gas near 300 K and ordinary atmospheric pressure, the mass-specific isobaric heat capacity is close to 1005 J kg^-1 K^-1. The Normal prior reflects standard engineering-table values with modest allowance for humidity, composition, and temperature-range differences.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 1005,
+      "sigma": 25,
+      "units": "J kg^-1 K^-1"
+    },
+    "source": "Cengel and Boles, Thermodynamics: An Engineering Approach, ideal-gas properties of air tables",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_cp_graphite_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "heat_capacity",
+      "graphite",
+      "solid",
+      "molar"
+    ],
+    "vars_involved": [
+      "cp_m_graphite_298K (J mol^-1 K^-1)"
+    ],
+    "statement": "For crystalline graphite at 298.15 K under standard pressure, the molar isobaric heat capacity is about 8.53 J mol^-1 K^-1. The Normal prior captures the well-tabulated standard-state value while leaving room for sample and crystallinity differences.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 8.53,
+      "sigma": 0.25,
+      "units": "J mol^-1 K^-1"
+    },
+    "source": "NIST-JANAF Thermochemical Tables, graphite heat-capacity entry",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_k_copper_300k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "thermal_conductivity",
+      "copper",
+      "conduction",
+      "metal"
+    ],
+    "vars_involved": [
+      "k_copper_300K (W m^-1 K^-1)"
+    ],
+    "statement": "For high-purity copper near room temperature, the thermal conductivity is commonly tabulated near 401 W m^-1 K^-1. The Normal prior is suitable for conductive heat-transfer models where purity, annealing, and temperature around 300 K may cause moderate variation.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 401,
+      "sigma": 15,
+      "units": "W m^-1 K^-1"
+    },
+    "source": "CRC Handbook of Chemistry and Physics, thermal conductivity of metals table",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_k_dry_air_300k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "thermal_conductivity",
+      "dry_air",
+      "conduction",
+      "gas"
+    ],
+    "vars_involved": [
+      "k_dry_air_300K (W m^-1 K^-1)"
+    ],
+    "statement": "For dry air near 300 K and 1 atm, the thermal conductivity is positive and concentrated around 0.0262 W m^-1 K^-1. The LogNormal parameters are natural-log-scale, giving a median near the standard gas-property value while preventing negative conductivity.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -3.642,
+      "sigma": 0.07,
+      "units": "W m^-1 K^-1"
+    },
+    "source": "Incropera, DeWitt, Bergman and Lavine, Fundamentals of Heat and Mass Transfer, gas thermal-property tables",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_k_borosilicate_glass_300k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "thermal_conductivity",
+      "borosilicate_glass",
+      "conduction",
+      "solid"
+    ],
+    "vars_involved": [
+      "k_borosilicate_glass_300K (W m^-1 K^-1)"
+    ],
+    "statement": "For common borosilicate glass near room temperature, thermal conductivity is typically around 1.1 W m^-1 K^-1. The LogNormal prior uses natural-log-scale parameters and reflects positive support plus composition-dependent variability among commercial borosilicate glasses.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0.0953,
+      "sigma": 0.25,
+      "units": "W m^-1 K^-1"
+    },
+    "source": "Incropera, DeWitt, Bergman and Lavine, Fundamentals of Heat and Mass Transfer, properties of solids table",
+    "confidence": "medium"
+  },
+  {
+    "id": "thermo_dhvap_water_373k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "enthalpy",
+      "vaporization",
+      "water",
+      "phase_change"
+    ],
+    "vars_involved": [
+      "delta_h_vap_water_373K (kJ mol^-1)"
+    ],
+    "statement": "At the normal boiling point of water, 373.15 K, the molar enthalpy of vaporization is about 40.65 kJ mol^-1. The Normal prior is appropriate for models of boiling or phase-change energy near 1 atm with small allowance for reference-state and measurement differences.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 40.65,
+      "sigma": 0.25,
+      "units": "kJ mol^-1"
+    },
+    "source": "NIST Chemistry WebBook, phase-change enthalpy data for water",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_dhfus_ice_273k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "enthalpy",
+      "fusion",
+      "ice",
+      "phase_change"
+    ],
+    "vars_involved": [
+      "delta_h_fus_ice_273K (kJ mol^-1)"
+    ],
+    "statement": "For melting hexagonal ice at 273.15 K and standard pressure, the molar enthalpy of fusion is close to 6.01 kJ mol^-1. The Normal prior represents the well-established latent heat of melting with narrow uncertainty for ordinary ice-water equilibrium.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 6.01,
+      "sigma": 0.08,
+      "units": "kJ mol^-1"
+    },
+    "source": "CRC Handbook of Chemistry and Physics, physical constants of water and ice",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_dhf_co2_g_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "enthalpy",
+      "formation",
+      "carbon_dioxide",
+      "standard_state"
+    ],
+    "vars_involved": [
+      "delta_h_f_CO2_g_298K (kJ mol^-1)"
+    ],
+    "statement": "For gaseous carbon dioxide at 298.15 K in the standard state, the standard molar enthalpy of formation is approximately -393.51 kJ mol^-1. The Normal prior is centered on thermochemical-table values with a broader modeling allowance than the tabulated experimental uncertainty.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": -393.51,
+      "sigma": 1.0,
+      "units": "kJ mol^-1"
+    },
+    "source": "NIST-JANAF Thermochemical Tables, standard enthalpies of formation",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_kw_water_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "equilibrium_constant",
+      "water",
+      "autoionization",
+      "Kw"
+    ],
+    "vars_involved": [
+      "K_w_water_autoionization_298K (dimensionless)"
+    ],
+    "statement": "For pure water at 298.15 K, the thermodynamic autoionization equilibrium constant has a conventional numerical value near 1.0e-14 when referenced to the standard concentration convention. The LogNormal parameters are natural-log-scale, so the median is about 1.0e-14 and the prior remains strictly positive.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -32.2362,
+      "sigma": 0.1,
+      "units": "dimensionless"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry, acid-base equilibria and water ion product tables",
+    "confidence": "high"
+  },
+  {
+    "id": "thermo_keq_n2o4_no2_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "equilibrium_constant",
+      "nitrogen_dioxide",
+      "dimerization",
+      "gas_phase"
+    ],
+    "vars_involved": [
+      "K_N2O4_to_2NO2_298K (dimensionless, 1 bar standard state)"
+    ],
+    "statement": "For the gas reaction N2O4 -> 2 NO2 at 298.15 K, the standard-state equilibrium constant is of order 0.15. The LogNormal prior uses natural-log-scale parameters, giving a positive dimensionless K centered on the standard thermochemical estimate while allowing moderate convention and temperature sensitivity.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -1.91,
+      "sigma": 0.2,
+      "units": "dimensionless"
+    },
+    "source": "Atkins and de Paula, Physical Chemistry, gas-phase equilibrium examples for nitrogen dioxide dimerization",
+    "confidence": "medium"
+  },
+  {
+    "id": "thermo_keq_ammonia_synthesis_298k",
+    "domain": "thermodynamics",
+    "keywords": [
+      "equilibrium_constant",
+      "ammonia_synthesis",
+      "gas_phase",
+      "Haber"
+    ],
+    "vars_involved": [
+      "K_N2_3H2_to_2NH3_298K (dimensionless, 1 bar standard state)"
+    ],
+    "statement": "For the gas reaction N2 + 3 H2 -> 2 NH3 at 298.15 K, standard Gibbs-energy tables imply a large dimensionless equilibrium constant with median near 5.8e5. The LogNormal prior uses natural-log-scale parameters and is intended for thermodynamic equilibrium modeling, not kinetic rate prediction.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 13.27,
+      "sigma": 0.25,
+      "units": "dimensionless"
+    },
+    "source": "NIST-JANAF Thermochemical Tables, standard Gibbs energies for ammonia synthesis",
+    "confidence": "high"
+  }
+]

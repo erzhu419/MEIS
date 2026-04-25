@@ -1,0 +1,266 @@
+[
+  {
+    "id": "econ_gasoline_price_elasticity_short_run",
+    "domain": "economics",
+    "keywords": [
+      "gasoline demand",
+      "own-price elasticity",
+      "short run",
+      "energy economics"
+    ],
+    "vars_involved": [
+      "short_run_gasoline_own_price_elasticity [dimensionless elasticity]"
+    ],
+    "statement": "A practical prior for the short-run own-price elasticity of gasoline demand is centered around -0.25, meaning a 1% gasoline price increase is expected to reduce gasoline quantity demanded by about 0.25% in the short run, with moderate cross-study uncertainty.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": -0.25,
+      "sigma": 0.1,
+      "units": "dimensionless elasticity"
+    },
+    "source": "Espey (1998) gasoline demand meta-analysis",
+    "confidence": "high"
+  },
+  {
+    "id": "econ_electricity_price_elasticity_long_run",
+    "domain": "economics",
+    "keywords": [
+      "electricity demand",
+      "own-price elasticity",
+      "long run",
+      "energy demand"
+    ],
+    "vars_involved": [
+      "long_run_residential_electricity_own_price_elasticity [dimensionless elasticity]"
+    ],
+    "statement": "For residential electricity demand, a long-run own-price elasticity prior can be centered near -0.70, reflecting that consumers can adjust appliances, insulation, and usage habits over time, making long-run demand more price-responsive than short-run demand.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": -0.7,
+      "sigma": 0.25,
+      "units": "dimensionless elasticity"
+    },
+    "source": "Labandeira, Labeaga and L\u00f3pez-Otero (2017) meta-analysis of energy-demand elasticities",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_food_income_elasticity_oecd",
+    "domain": "economics",
+    "keywords": [
+      "food demand",
+      "income elasticity",
+      "Engel curve",
+      "household consumption"
+    ],
+    "vars_involved": [
+      "income_elasticity_of_food_expenditure_in_high_income_households [dimensionless elasticity]"
+    ],
+    "statement": "For food expenditure in high-income economies, a prior on the income elasticity can be bounded between 0 and 1 and centered around 0.6, consistent with food being a necessity whose budget share tends to fall as income rises.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 6,
+      "beta": 4,
+      "units": "dimensionless elasticity bounded between 0 and 1"
+    },
+    "source": "Deaton and Muellbauer, Economics and Consumer Behavior",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_taxable_income_elasticity",
+    "domain": "economics",
+    "keywords": [
+      "taxable income",
+      "elasticity",
+      "tax policy",
+      "marginal tax rate"
+    ],
+    "vars_involved": [
+      "elasticity_of_taxable_income_with_respect_to_net_of_tax_rate [dimensionless elasticity]"
+    ],
+    "statement": "A commonly used prior for the elasticity of taxable income with respect to the net-of-tax rate is positive and centered near 0.30, allowing for meaningful but not extreme behavioral responses to marginal tax-rate changes.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 4,
+      "beta": 13.333333,
+      "units": "dimensionless elasticity"
+    },
+    "source": "Saez, Slemrod and Giertz (2012) review of taxable-income elasticity evidence",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_frisch_labor_supply_elasticity",
+    "domain": "economics",
+    "keywords": [
+      "labor supply",
+      "Frisch elasticity",
+      "macroeconomics",
+      "household labor"
+    ],
+    "vars_involved": [
+      "Frisch_labor_supply_elasticity [dimensionless elasticity]"
+    ],
+    "statement": "For macroeconomic labor-supply modeling, a positive Frisch elasticity prior with median about 0.5 allows hours worked to respond to temporary wage changes while reflecting substantial disagreement across micro and macro estimates.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": -0.693147,
+      "sigma": 0.4,
+      "units": "dimensionless elasticity"
+    },
+    "source": "Chetty et al. (2011) review of labor-supply elasticity evidence",
+    "confidence": "low"
+  },
+  {
+    "id": "econ_social_discount_rate_real",
+    "domain": "economics",
+    "keywords": [
+      "social discount rate",
+      "cost-benefit analysis",
+      "public projects",
+      "real rate"
+    ],
+    "vars_involved": [
+      "real_social_discount_rate_for_public_project_appraisal [proportion per year]"
+    ],
+    "statement": "A real social discount rate prior for public-project appraisal can be positive and centered at 3% per year, matching common government cost-benefit guidance while allowing uncertainty over the appropriate normative rate.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 9,
+      "beta": 300,
+      "units": "proportion per year"
+    },
+    "source": "U.S. Office of Management and Budget Circular A-4 benefit-cost analysis guidance",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_real_risk_free_rate_annual",
+    "domain": "economics",
+    "keywords": [
+      "risk-free rate",
+      "real interest rate",
+      "discount rate",
+      "safe asset"
+    ],
+    "vars_involved": [
+      "annual_real_short_term_risk_free_rate [proportion per year]"
+    ],
+    "statement": "A broad historical prior for the annual real short-term risk-free rate is centered near 1% per year, with enough dispersion to admit negative real rates and higher-rate regimes observed across advanced economies.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.01,
+      "sigma": 0.02,
+      "units": "proportion per year"
+    },
+    "source": "Dimson, Marsh and Staunton, Global Investment Returns Yearbook",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_subjective_discount_factor_annual",
+    "domain": "economics",
+    "keywords": [
+      "discount factor",
+      "time preference",
+      "macroeconomics",
+      "dynamic models"
+    ],
+    "vars_involved": [
+      "annual_subjective_discount_factor [unitless annual multiplier]"
+    ],
+    "statement": "In annual macroeconomic models, the subjective discount factor is commonly close to but below one; this prior centers it at 0.96, corresponding roughly to a 4% annual pure discounting scale before growth and risk adjustments.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 96,
+      "beta": 4,
+      "units": "unitless annual multiplier bounded between 0 and 1"
+    },
+    "source": "Ljungqvist and Sargent, Recursive Macroeconomic Theory",
+    "confidence": "high"
+  },
+  {
+    "id": "econ_us_pce_inflation_drift_long_run",
+    "domain": "economics",
+    "keywords": [
+      "inflation drift",
+      "trend inflation",
+      "PCE inflation",
+      "monetary policy"
+    ],
+    "vars_involved": [
+      "long_run_US_PCE_inflation_drift [proportion per year]"
+    ],
+    "statement": "For the long-run drift of U.S. PCE inflation in a post-targeting regime, a prior centered at 2% per year reflects the Federal Reserve's stated longer-run inflation objective, with modest uncertainty around that anchor.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.02,
+      "sigma": 0.005,
+      "units": "proportion per year"
+    },
+    "source": "Federal Reserve FOMC Statement on Longer-Run Goals and Monetary Policy Strategy",
+    "confidence": "high"
+  },
+  {
+    "id": "econ_us_inflation_drift_quarterly_innovation",
+    "domain": "economics",
+    "keywords": [
+      "inflation drift",
+      "trend inflation",
+      "state space model",
+      "quarterly inflation"
+    ],
+    "vars_involved": [
+      "quarterly_innovation_to_latent_US_annualized_inflation_drift [proportion per year]"
+    ],
+    "statement": "In a random-walk trend-inflation model, the quarterly innovation to latent annualized inflation drift can be centered at zero with a standard deviation of 0.25 percentage points, allowing gradual changes in the inflation trend rather than abrupt jumps.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0,
+      "sigma": 0.0025,
+      "units": "proportion per year"
+    },
+    "source": "Stock and Watson (2007) unobserved-components stochastic-volatility inflation model",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_individual_stock_market_beta",
+    "domain": "economics",
+    "keywords": [
+      "stock returns",
+      "CAPM beta",
+      "market risk",
+      "equity"
+    ],
+    "vars_involved": [
+      "market_beta_of_large_cap_individual_stock_return [dimensionless CAPM beta]"
+    ],
+    "statement": "For a large-cap individual stock with positive market exposure, a market beta prior with median 1.0 captures the idea that many stocks move roughly one-for-one with the market while allowing substantial firm-specific variation.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 0,
+      "sigma": 0.35,
+      "units": "dimensionless CAPM beta"
+    },
+    "source": "Bodie, Kane and Marcus, Investments",
+    "confidence": "medium"
+  },
+  {
+    "id": "econ_utility_sector_stock_beta",
+    "domain": "economics",
+    "keywords": [
+      "stock returns",
+      "industry beta",
+      "utilities",
+      "defensive equity"
+    ],
+    "vars_involved": [
+      "market_beta_of_regulated_utility_sector_equity_portfolio [dimensionless CAPM beta]"
+    ],
+    "statement": "For a regulated utility-sector equity portfolio, a market beta prior centered below one reflects the sector's historically defensive cash flows and lower sensitivity to aggregate equity-market movements.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 0.65,
+      "sigma": 0.15,
+      "units": "dimensionless CAPM beta"
+    },
+    "source": "Damodaran online industry beta data tables",
+    "confidence": "medium"
+  }
+]

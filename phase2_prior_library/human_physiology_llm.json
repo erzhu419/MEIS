@@ -1,0 +1,233 @@
+[
+  {
+    "id": "human_physiology_core_temp_c",
+    "domain": "human_physiology",
+    "keywords": [
+      "core temperature",
+      "vital signs",
+      "thermoregulation"
+    ],
+    "vars_involved": [
+      "core_body_temperature_degC"
+    ],
+    "statement": "For a healthy resting adult, core body temperature is reasonably modeled as tightly centered near 37.0 \u00b0C, with ordinary circadian and measurement variation captured by a Normal prior with standard deviation about 0.3 \u00b0C.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 37.0,
+      "sigma": 0.3,
+      "units": "degC"
+    },
+    "source": "Guyton and Hall Textbook of Medical Physiology",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_resting_hr_bpm",
+    "domain": "human_physiology",
+    "keywords": [
+      "heart rate",
+      "pulse",
+      "vital signs"
+    ],
+    "vars_involved": [
+      "resting_heart_rate_beats_per_min"
+    ],
+    "statement": "For a healthy adult at rest, heart rate is commonly near 70 beats per minute, with typical inter-individual variation represented by a Normal prior with a standard deviation of about 10 beats per minute.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 70.0,
+      "sigma": 10.0,
+      "units": "beats/min"
+    },
+    "source": "Bates' Guide to Physical Examination and History Taking",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_systolic_bp_mmhg",
+    "domain": "human_physiology",
+    "keywords": [
+      "blood pressure",
+      "systolic pressure",
+      "vital signs"
+    ],
+    "vars_involved": [
+      "resting_systolic_blood_pressure_mmHg"
+    ],
+    "statement": "For a resting adult without known cardiovascular disease, systolic blood pressure can be anchored near 120 mmHg, with age, body size, and measurement-setting variation approximated by a Normal prior with standard deviation about 12 mmHg.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 120.0,
+      "sigma": 12.0,
+      "units": "mmHg"
+    },
+    "source": "Harrison's Principles of Internal Medicine",
+    "confidence": "medium"
+  },
+  {
+    "id": "human_physiology_spo2_sea_level",
+    "domain": "human_physiology",
+    "keywords": [
+      "oxygen saturation",
+      "pulse oximetry",
+      "arterial oxygenation"
+    ],
+    "vars_involved": [
+      "resting_pulse_oxygen_saturation_proportion"
+    ],
+    "statement": "For a healthy adult at sea level breathing room air, resting pulse oxygen saturation is usually high, around 97.5%; a Beta prior with alpha 236.7 and beta 6.1 represents a mean near 0.975 and standard deviation near 0.01 on the proportion scale.",
+    "formal": {
+      "distribution": "Beta",
+      "alpha": 236.7,
+      "beta": 6.1,
+      "units": "proportion"
+    },
+    "source": "World Health Organization Pulse Oximetry Training Manual",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_tidal_volume_ml",
+    "domain": "human_physiology",
+    "keywords": [
+      "tidal volume",
+      "ventilation",
+      "respiratory physiology"
+    ],
+    "vars_involved": [
+      "resting_tidal_volume_mL_per_breath"
+    ],
+    "statement": "For a healthy adult at rest, tidal volume is commonly approximated as 500 mL per breath, with ordinary body-size variation represented by a Normal prior with standard deviation about 100 mL.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 500.0,
+      "sigma": 100.0,
+      "units": "mL/breath"
+    },
+    "source": "West's Respiratory Physiology: The Essentials",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_blood_volume_mlkg",
+    "domain": "human_physiology",
+    "keywords": [
+      "blood volume",
+      "circulation",
+      "body composition"
+    ],
+    "vars_involved": [
+      "blood_volume_mL_per_kg_body_mass"
+    ],
+    "statement": "For healthy adults, total blood volume is often approximated near 70 mL per kg of body mass, with sex and body-composition differences captured by a Normal prior with standard deviation about 8 mL/kg.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 70.0,
+      "sigma": 8.0,
+      "units": "mL/kg"
+    },
+    "source": "Guyton and Hall Textbook of Medical Physiology",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_fasting_glucose_mgdl",
+    "domain": "human_physiology",
+    "keywords": [
+      "fasting glucose",
+      "metabolism",
+      "blood chemistry"
+    ],
+    "vars_involved": [
+      "fasting_plasma_glucose_mg_per_dL"
+    ],
+    "statement": "For a metabolically healthy adult after an overnight fast, fasting plasma glucose is commonly near 90 mg/dL; a Normal prior with standard deviation 10 mg/dL keeps most mass within the usual normoglycemic range.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 90.0,
+      "sigma": 10.0,
+      "units": "mg/dL"
+    },
+    "source": "American Diabetes Association Standards of Care in Diabetes",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_serum_sodium_mmol",
+    "domain": "human_physiology",
+    "keywords": [
+      "serum sodium",
+      "electrolytes",
+      "osmoregulation"
+    ],
+    "vars_involved": [
+      "serum_sodium_mmol_per_L"
+    ],
+    "statement": "For healthy adults, serum sodium concentration is tightly regulated around 140 mmol/L; a Normal prior with standard deviation 2.5 mmol/L places most probability within the conventional 135 to 145 mmol/L reference interval.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 140.0,
+      "sigma": 2.5,
+      "units": "mmol/L"
+    },
+    "source": "Tietz Textbook of Clinical Chemistry and Molecular Diagnostics",
+    "confidence": "high"
+  },
+  {
+    "id": "human_physiology_bmr_kcal_day",
+    "domain": "human_physiology",
+    "keywords": [
+      "basal metabolic rate",
+      "energy expenditure",
+      "metabolism"
+    ],
+    "vars_involved": [
+      "basal_metabolic_rate_kcal_per_day"
+    ],
+    "statement": "For an unconditioned mixed adult population, basal metabolic rate is positive and right-skewed; a LogNormal prior with natural-log mu 7.38 and sigma 0.25 gives a median near 1600 kcal/day and allows moderate variation due to sex, age, and body size.",
+    "formal": {
+      "distribution": "LogNormal",
+      "mu": 7.38,
+      "sigma": 0.25,
+      "units": "kcal/day"
+    },
+    "source": "FAO/WHO/UNU Human Energy Requirements report",
+    "confidence": "medium"
+  },
+  {
+    "id": "human_physiology_resting_lactate_mmol",
+    "domain": "human_physiology",
+    "keywords": [
+      "blood lactate",
+      "anaerobic metabolism",
+      "exercise physiology"
+    ],
+    "vars_involved": [
+      "resting_blood_lactate_mmol_per_L"
+    ],
+    "statement": "For a healthy adult at rest, blood lactate concentration is typically close to 1.0 mmol/L and strictly positive; using the Gamma rate parameterization, alpha 11.1 and beta 11.1 imply a mean near 1.0 mmol/L and standard deviation near 0.3 mmol/L.",
+    "formal": {
+      "distribution": "Gamma",
+      "alpha": 11.1,
+      "beta": 11.1,
+      "units": "mmol/L"
+    },
+    "source": "McArdle, Katch, and Katch, Exercise Physiology: Nutrition, Energy, and Human Performance",
+    "confidence": "medium"
+  },
+  {
+    "id": "human_physiology_walk_speed_ms",
+    "domain": "human_physiology",
+    "keywords": [
+      "walking speed",
+      "gait",
+      "biomechanics"
+    ],
+    "vars_involved": [
+      "comfortable_walking_speed_m_per_s"
+    ],
+    "statement": "For healthy community-dwelling adults walking at a comfortable self-selected pace, speed is commonly around 1.3 to 1.4 m/s; a Normal prior centered at 1.34 m/s with standard deviation 0.20 m/s captures typical adult gait variability.",
+    "formal": {
+      "distribution": "Normal",
+      "mu": 1.34,
+      "sigma": 0.2,
+      "units": "m/s"
+    },
+    "source": "Perry and Burnfield, Gait Analysis: Normal and Pathological Function",
+    "confidence": "medium"
+  }
+]
