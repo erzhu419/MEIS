@@ -27,10 +27,13 @@ from phase3_embedding.llm_expert_panel import (
 def test_all_raters_succeed_on_all_benchmarks():
     results = run_all(verbose=False)
     assert len(results) == 3
+    from phase3_embedding.llm_expert_panel import RATERS
+    n_raters = len(RATERS)
     for r in results:
-        assert len(r.per_rater_rankings) == 4, \
-            f"{r.benchmark}: only {len(r.per_rater_rankings)} raters"
-    print(f"[PASS] all 4 raters succeeded on all 3 benchmarks ({4*3}/12)")
+        assert len(r.per_rater_rankings) == n_raters, \
+            f"{r.benchmark}: only {len(r.per_rater_rankings)} of {n_raters} raters"
+    print(f"[PASS] all {n_raters} raters succeeded on all 3 benchmarks "
+          f"({n_raters * 3}/{n_raters * 3})")
 
 
 def test_inter_rater_agreement():

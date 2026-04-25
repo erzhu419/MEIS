@@ -119,7 +119,7 @@ Entries to review:
 
 
 def call_api(model: str, prompt: str, key: str, seed: int = 0,
-              timeout: int = 120) -> str:
+              timeout: int = 240) -> str:
     payload = {
         "model": model,
         "messages": [
@@ -188,7 +188,7 @@ def review_entries(entries: list, seed: int = 0) -> list:
         return entries
 
 
-def bootstrap(target_per_domain: int = 16, verbose: bool = True):
+def bootstrap(target_per_domain: int = 12, verbose: bool = True):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     cache_path = OUT_DIR / "_llm_bootstrap_cache.json"
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
@@ -199,18 +199,35 @@ def bootstrap(target_per_domain: int = 16, verbose: bool = True):
         if domain in cache and "kept" in cache[domain]:
             kept = cache[domain]["kept"]
             if verbose:
-                print(f"  (cached) {domain:<25} {len(kept)} kept")
+                print(f"  (cached) {domain:<25} {len(kept)} kept", flush=True)
         else:
             if verbose:
-                print(f"  generating  {domain:<25} ...")
-            entries = generate_for_domain(domain, desc, n=target_per_domain)
+                print(f"  generating  {domain:<25} ...", flush=True)
+            try:
+                entries = generate_for_domain(domain, desc, n=target_per_domain)
+            except Exception as e:
+                print(f"  GEN FAILED  {domain:<25}: {e}", flush=True)
+                cache[domain] = dict(generated=[], kept=[], error=str(e))
+                cache_path.write_text(json.dumps(cache, indent=2))
+                continue
+            # Save GENERATE before REVIEW so a review timeout doesn't
+            # lose all the generation work
+            cache[domain] = dict(generated=entries, kept=None)
+            cache_path.write_text(json.dumps(cache, indent=2))
             if verbose:
-                print(f"  reviewing   {domain:<25} {len(entries)} candidates ...")
-            kept = review_entries(entries)
+                print(f"  reviewing   {domain:<25} {len(entries)} candidates ...",
+                      flush=True)
+            try:
+                kept = review_entries(entries)
+            except Exception as e:
+                print(f"  REVIEW FAILED {domain:<25}: {e}", flush=True)
+                # Keep all generated as a fallback (better than losing them)
+                kept = entries
             cache[domain] = dict(generated=entries, kept=kept)
             cache_path.write_text(json.dumps(cache, indent=2))
             if verbose:
-                print(f"  result      {domain:<25} {len(kept)}/{len(entries)} kept")
+                print(f"  result      {domain:<25} {len(kept)}/{len(entries)} kept",
+                      flush=True)
         all_kept.extend(kept)
         summary[domain] = dict(kept=len(kept),
                                 generated=len(cache[domain].get("generated", [])))
