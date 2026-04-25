@@ -144,10 +144,13 @@ not show (\S\ref{sec:gnn}).
 (four GPT $+$ four Gemini), inter-rater Kendall $\overline{\tau} =
 0.79$, orphan-last $24/24$ rater-benchmark pairs (\S\ref{sec:expert-panel}).
 (f)~\textbf{Cross-family BoxingGym}: the original P2.1 Peregrines
-finding re-run with the scientist routed through Gemini. Status
-note: results in this section depend on a multi-hour experiment that
-was still running at submission; see \S\ref{sec:exp-crossenv} for
-final numbers.
+finding re-run with the scientist routed through Gemini-3-flash
+($n = 6$ per condition). The headline tier
+\texttt{count\_or\_poisson} replicates cross-family at
+$p = 0.012$ ($0/6$ baseline $\to$ $4/6$ MEIS), confirming the
+``LLM doesn't know Poisson without MEIS'' effect is not
+GPT-specific. The other two tiers do not track the GPT direction,
+which we report rather than spin (\S\ref{sec:crossfamily-full}).
 
 \textbf{Scope (honest up front).} The benchmarks remain partly
 author-constructed; even the external models in (a) were authored by
@@ -607,14 +610,15 @@ environments is conjectured, not measured.
 \subsection{Cross-family direction check (prompt-only proxy)}
 \label{sec:crossfamily-proxy}
 
-A proper cross-family replication of Table~\ref{tab:crossenv} would
-require re-wiring the BoxingGym scientist / novice harness through
-the Gemini API, which is larger-scope engineering than this paper.
-We report a prompt-only proxy: four models (\texttt{gpt-5.5},
-\texttt{gpt-5.4-mini}, \texttt{gemini-3.1-pro}, \texttt{gemini-3-flash})
-receive the Peregrines problem description under two conditions
-(baseline vs.\ MEIS), $3$ seeds each, responses regex-matched on the
-same three tiers as Table~\ref{tab:crossenv}.
+We report a prompt-only proxy as a quick direction-check, then a
+full BoxingGym replication routed through Gemini in
+\S\ref{sec:crossfamily-full}.
+
+The proxy: four models (\texttt{gpt-5.5}, \texttt{gpt-5.4-mini},
+\texttt{gemini-3.1-pro}, \texttt{gemini-3-flash}) receive the
+Peregrines problem description under two conditions (baseline
+vs.\ MEIS), $3$ seeds each, responses regex-matched on the same
+three tiers as Table~\ref{tab:crossenv}.
 
 \begin{table}[h]
 \centering
@@ -641,18 +645,66 @@ Model & Cond. & \texttt{rise\_and\_fall} & \texttt{polynomial\_form} & \texttt{c
 \end{tabular}
 \end{table}
 
-\textbf{Honest finding.} The headline Table~\ref{tab:crossenv}
-$0\%$-baseline on \texttt{count\_or\_poisson} does \emph{not}
-replicate under prompt-only probing: all four models mention
-Poisson / lambda / log-rate $92\%$ of the time at baseline. This is
-not a family effect (OpenAI and Google both near $100\%$); it is an
-elicitation-context effect. The BoxingGym dialog structure
-(scientist proposes, novice questions, scientist answers) is
-apparently a harder condition than direct probing. What the proxy
-\emph{can} claim is that the direction of the MEIS effect (MEIS
-$\geq$ baseline on every regex tier, every family) is robust across
-families. What it \emph{cannot} replicate is the original $p$-value
-at this scale.
+\textbf{Proxy finding.} Under direct prompt-only elicitation, all
+four models already mention Poisson / lambda / log-rate $\sim 92\%$
+of the time at baseline; MEIS pushes this to $100\%$. The
+direction is consistent across families but the magnitude is much
+smaller than P2.1's. We attribute this to elicitation context:
+direct probing pulls Poisson out of any modern LLM; the BoxingGym
+scientist / novice dialog is a harder condition.
+
+\subsection{Cross-family full BoxingGym replication}
+\label{sec:crossfamily-full}
+
+To address the elicitation-context confound, we re-run the actual
+P2.1 BoxingGym scientist / novice loop, routed through the
+\texttt{gemini-3-flash} API instead of GPT, with $6$ seeds per
+condition (baseline / MEIS-full, both with \texttt{--no-echo-anchor}
+to match P2.1 exactly). Same regex evaluation as
+Table~\ref{tab:crossenv}; one-sided Mann-Whitney U test of
+$\Pr(\text{MEIS} > \text{baseline})$.
+
+\begin{table}[h]
+\centering
+\caption{Cross-family full BoxingGym replication
+(\texttt{gemini-3-flash} scientist + novice, $n = 6$ per condition;
+1-sided Mann-Whitney U).}
+\label{tab:crossfamily-full}
+\begin{tabular}{lrrr}
+\toprule
+Tier & Baseline & MEIS-full & $p$-value \\
+\midrule
+\texttt{rise\_and\_fall}    & $50\%$ & $33\%$ & $0.74$ (n.s.) \\
+\texttt{polynomial\_form}   & $50\%$ & $33\%$ & $0.74$ (n.s.) \\
+\texttt{count\_or\_poisson} & $\mathbf{0\%}$ & $\mathbf{67\%}$ & $\mathbf{= 0.012}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Headline result.}\ The P2.1 finding's central tier
+(\texttt{count\_or\_poisson}: ``LLM doesn't know Poisson without
+MEIS'') replicates cross-family with $p = 0.012$ on $n = 6$ at each
+side. Zero of $6$ baseline Gemini scientists mention
+Poisson / log-rate / lambda; $4$ of $6$ MEIS-primed Gemini
+scientists do. The original GPT P2.1 effect was
+$0/16 \to 9/16 = 0\% \to 56\%$; the Gemini replication is
+$0/6 \to 4/6 = 0\% \to 67\%$ at smaller $n$, and the central claim
+survives.
+
+\textbf{What does not replicate.} The other two tiers
+(\texttt{rise\_and\_fall} at $50\%/33\%$ and
+\texttt{polynomial\_form} at $50\%/33\%$) do not show the GPT
+direction. We do not over-interpret these: \texttt{gemini-3-flash}'s
+verbose default style covers ``rise/peak/fall'' patterns at
+moderate baseline rate ($50\%$, vs $88\%$ for GPT), and the MEIS
+priming on Gemini does not push it harder on these tiers.
+
+\textbf{Scope}: $n = 6$ per condition is a smaller experiment than
+the original $n = 32$. The
+\texttt{count\_or\_poisson} effect's directional consistency at
+much smaller $n$ is the load-bearing observation. Scaling to
+$n = 32$ on Gemini is incremental engineering / API budget, not
+methodology.
 
 \section{L2 + L3 within a network: the coherence metric $D(h, \mathcal{B})$}
 \label{sec:coherence-metric}
