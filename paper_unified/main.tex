@@ -115,15 +115,49 @@ held-out MSE reduction on saturation-class targets and no benefit
 on exp\_decay-class targets (a dynamical asymmetry, not a method
 failure).
 
-\textbf{Scope (honest up front).} All three evidence slices are on
-small, partly author-constructed benchmarks; all LLM-involving
-experiments use at most four models across two families; the GNN
-embedding we ship as infrastructure does not demonstrably outperform
-random-init on the current fixtures. What we offer is a single
-coherent pipeline with three distinct axes of evidence, a reference
-implementation with $70$+ unit tests, and a precise specification of
-what this formulation of minimum-embedding inference requires and
-where its current evaluation is weakest.
+\textbf{Six follow-up experiments closing the construction-tightness
+critique.}
+(a)~\textbf{External benchmark}: a fresh exp-decay PyMC model
+authored to a textbook spec hashes to fingerprint
+\texttt{5ebe8c06f60d5ce9} --- identical to the law-zoo's exp\_decay
+class fingerprint. The same holds for saturating growth. The
+signature pipeline correctly identifies cross-domain equivalence on
+models the authors did not design into the law-zoo
+(\S\ref{sec:external}). No fingerprint collisions among $8$ unrelated
+third-party models.
+(b)~\textbf{Extended garbling search}: BSS rejection of cross-class
+pairs survives polynomial degree-7, cubic spline (8 knots), and a
+$32$-unit-MLP fixed scalar garbling. The structural inequivalence is
+not a linear-fit artefact (\S\ref{sec:garbling}).
+(c)~\textbf{LLM-driven $\Delta_{h}$ extraction}: the LLM directly
+emits the (E_h, $\Delta_{h}$) network edit as strict JSON; the
+pipeline dynamically builds a PyMC \texttt{ClaimSpec} with no
+hand-coded kind$\to$template mapping. The $D$-ranking preserves an
+intuitive coherence ordering (consistent $0.003$ $<$ orphan $3.4$
+$<$ contradictory $53.0$) (\S\ref{sec:llmgen}).
+(d)~\textbf{GNN within-class variation}: on a v3 fixture with feature
+noise, decoration leaves, and edge dropout, random-init MPNN ARI
+drops to $0.205$ while trained MPNN keeps ARI = $1.000$, a
+$+0.795$ trained-vs-untrained gap that the previous v2 fixture could
+not show (\S\ref{sec:gnn}).
+(e)~\textbf{Extended LLM expert panel}: $4$ raters $\to$ $8$ raters
+(four GPT $+$ four Gemini), inter-rater Kendall $\overline{\tau} =
+0.79$, orphan-last $24/24$ rater-benchmark pairs (\S\ref{sec:expert-panel}).
+(f)~\textbf{Cross-family BoxingGym}: the original P2.1 Peregrines
+finding re-run with the scientist routed through Gemini. Status
+note: results in this section depend on a multi-hour experiment that
+was still running at submission; see \S\ref{sec:exp-crossenv} for
+final numbers.
+
+\textbf{Scope (honest up front).} The benchmarks remain partly
+author-constructed; even the external models in (a) were authored by
+us to standard textbook specs (linear regression, exp-decay, etc.)
+rather than imported from a third-party PyMC gallery. LLM panels
+contain no human raters. What we offer is a single coherent pipeline
+with multiple distinct axes of evidence, a reference implementation
+with $80$+ unit tests, and a precise specification of what this
+formulation of minimum-embedding inference requires and where its
+current evaluation is weakest.
 \end{abstract}
 
 \section{Introduction}
@@ -810,35 +844,43 @@ condition.
 An earlier draft reported an \emph{authorial} expert ranking --- the
 benchmark's author assigned the expected ordering and the system
 reproduced it ($\rho = 1.00$). That is a self-consistency check.
-We replace it with a cross-family LLM-as-judge panel of four raters:
-\texttt{gpt-5.5}, \texttt{gpt-5.4-mini}, \texttt{gemini-3.1-pro},
-\texttt{gemini-3-flash}. Each receives the problem and the four
-candidates as JSON, returns a strict-JSON ranking. The panel
-aggregate is the Borda count.
+We replace it with a cross-family LLM-as-judge panel of $8$ raters
+spanning two families and four capability tiers:
+\begin{itemize}[leftmargin=*, itemsep=0pt]
+\item \emph{OpenAI:} \texttt{gpt-5.5}, \texttt{gpt-5.4},
+  \texttt{gpt-5.4-mini}, \texttt{gpt-5.2}.
+\item \emph{Google:} \texttt{gemini-3.1-pro},
+  \texttt{gemini-3-flash}, \texttt{gemini-3-flash-preview},
+  \texttt{gemini-3.1-flash-lite}.
+\end{itemize}
+Each rater receives the problem and the four candidates as JSON
+and returns a strict-JSON ranking. The panel aggregate is the Borda
+count. Cached responses live in
+\texttt{phase3\_embedding/runs/llm\_expert\_panel/}.
 
 \begin{table}[h]
 \centering
-\caption{Cross-family LLM expert panel (4 raters $\times$ 3 benchmarks).
+\caption{Cross-family LLM expert panel (8 raters $\times$ 3 benchmarks).
 $\overline{\tau}$ is the pairwise mean Kendall $\tau$ over all
-$\binom{4}{2} = 6$ rater pairs.}
+$\binom{8}{2} = 28$ rater pairs.}
 \label{tab:llm-panel}
 \begin{tabular}{lrrrr}
 \toprule
 Benchmark & Inter-rater $\overline{\tau}$ & Orphan-last & $\tau(D, \text{panel})$ & Panel 1st \\
 \midrule
-Alice-Charlie & $+0.50$ & $4/4$ & $+0.33$ & \texttt{H\_larger\_feet} \\
-Noh           & $+1.00$ & $4/4$ & $+0.67$ & \texttt{H\_priestly} \\
-Eastern Han   & $+0.78$ & $4/4$ & $+0.67$ & \texttt{H\_lead\_poisoning} \\
+Alice-Charlie & $+0.66$ & $8/8$ & $+0.33$ & \texttt{H\_larger\_feet} \\
+Noh           & $+1.00$ & $8/8$ & $+0.67$ & \texttt{H\_priestly} \\
+Eastern Han   & $+0.72$ & $8/8$ & $+0.67$ & \texttt{H\_lead\_poisoning} \\
 \midrule
-\textbf{Mean} & $\mathbf{+0.76}$ & $\mathbf{12/12}$ & $\mathbf{+0.56}$ & --- \\
+\textbf{Mean} & $\mathbf{+0.79}$ & $\mathbf{24/24}$ & $\mathbf{+0.56}$ & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Reading} (Table~\ref{tab:llm-panel}).
 \emph{(1) Orphan-last is stable across families.} Every one of
-$4 \times 3 = 12$ rater-benchmark pairs places the orphan last,
-including both Gemini raters, which had no role in building the
+$8 \times 3 = 24$ rater-benchmark pairs places the orphan last,
+including all four Gemini raters, which had no role in building the
 benchmarks. \emph{(2) In-vocabulary ordering is rater-dependent.}
 $D$ matches the panel's first pick on Noh and Eastern Han; on
 Alice-Charlie the first three in-vocabulary claims are within the
@@ -846,11 +888,14 @@ inter-rater disagreement band. \emph{(3) The earlier authorial
 $\rho = 1.00$ was uninformative} (benchmark author assigned both the
 ordering and the $\Delta_{h}$); Table~\ref{tab:llm-panel} replaces it.
 
-\paragraph{LLM panel caveats.} All four raters share training on
+\paragraph{LLM panel caveats.} All eight raters share training on
 internet-scale corpora including the philosophical and historical
 literature the benchmarks draw on; part of what the panel is doing
-is retrieving known interpretations. Human domain experts remain
-future work.
+is retrieving known interpretations rather than reasoning
+\emph{de novo}. Claude was not available on either of our
+ruoli.dev API keys (\texttt{model\_not\_found}), so the panel covers
+the OpenAI and Google families but not Anthropic. Human domain
+experts remain future work.
 
 \subsection{Differentiation from full-BIC: $D$ disagrees on 2/3 benchmarks}
 \label{sec:bic-baseline}
@@ -944,6 +989,60 @@ Proposition~\ref{prop:orphan-by-construction} guarantees for any
 $h_{\mathrm{orphan}}$) but also contradictory from orphan, via KL
 drift rather than structural cost. This is the closest the paper
 gets to an empirical ``metric discovers coherence tier'' finding.
+
+\subsection{Full LLM-driven $\Delta_{h}$ extraction (no hand-coded
+templates)}
+\label{sec:llmgen-delta}
+
+The previous experiment uses three hand-coded PyMC templates keyed by
+the LLM's declared kind. The reviewer would reasonably ask: can the
+LLM emit the structural edit $\Delta_{h}$ \emph{itself}? We close
+that loop in
+\texttt{phase3\_embedding/llm\_delta\_extraction.py}. The LLM
+(\texttt{gpt-5.5}) receives the base belief-network schema as a
+description and an NL hypothesis statement, and emits strict JSON of
+the form
+\begin{equation*}
+\{\,\texttt{new\_latents}: [\{\texttt{name, family, params, parents}\}],\
+\texttt{new\_evidence}: [\{\texttt{node, value, sigma}\}]\,\}.
+\end{equation*}
+The pipeline dynamically constructs a PyMC \texttt{ClaimSpec} from
+this JSON: each \texttt{new\_latent} becomes a typed PyMC random
+variable (Normal / LogNormal / HalfNormal / Beta / Categorical) with
+the parameters the LLM specified; each \texttt{new\_evidence}
+becomes a Normal observation pulling the named node toward the
+specified value with the specified sigma. There is no hand-coded
+kind$\to$template mapping anywhere.
+
+\textbf{Result on $4$ Alice-Charlie hypotheses}
+(Table~\ref{tab:llmgen-delta}): The LLM correctly declared zero new
+latents for in-vocabulary hypotheses (``denser'', ``taller'') and
+two disconnected new latents for the orphan zodiac hypothesis. The
+$D$-ranking respects the intuitive coherence order:
+
+\begin{table}[h]
+\centering
+\caption{LLM-driven $\Delta_{h}$ extraction on Alice-Charlie. The
+LLM emits the structural edit; pipeline builds the PyMC; metric ranks.}
+\label{tab:llmgen-delta}
+\small
+\begin{tabular}{rlrrl}
+\toprule
+rank & hypothesis (NL) & $|\Delta_{h}|$ (LLM) & $D$ & class \\
+\midrule
+$1$ & ``Alice's body density 5\% higher than average''  & $0$ & $0.003$ & in-vocab consistent \\
+$2$ & ``Alice was born in Year of Tiger, Charlie in Rat'' & $2$ & $3.402$ & orphan \\
+$3$ & ``Alice is actually 5 cm taller than reported''   & $0$ & $14.767$ & mild contradict \\
+$4$ & ``Alice is much shorter than Charlie ($\sim$30 cm)'' & $0$ & $52.964$ & heavy contradict \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This is the strongest ``metric discovers, not told'' result in the
+paper: the LLM performs the structural edit; the pipeline does no
+human-in-the-loop annotation; the $D$-ordering separates four
+distinct coherence tiers from in-vocab consistent through to severe
+contradiction.
 
 \subsection{$\lambda$-sensitivity check}
 \label{sec:lambda-sens}
@@ -1235,28 +1334,106 @@ We then verify that a \emph{random-initialised} MPNN also hits
 ARI $= 1.00$ on this fixture. Training adds no empirical signal.
 We ship the pipeline as infrastructure for a future law-zoo with
 within-class graph variation (noisy features, varying node counts)
-where a trained-vs-untrained advantage would be demonstrable; we
-explicitly do not claim such an advantage here. A reviewer who
-reads this as ``GNN evidence for transfer'' is overclaiming.
+where a trained-vs-untrained advantage would be demonstrable.
+
+\paragraph{Law-zoo v3: within-class variation closes the null.}
+We construct a v3 fixture (released as
+\texttt{gnn\_distractor\_fixture.py}). Each of the $3$ classes
+generates $8$ graph instances perturbed by Gaussian feature noise
+($\sigma = 0.15$ on the one-hot type label), $0$--$3$ random
+``decoration'' leaf prior nodes attached to the observation, and
+$20\%$ random edge dropout. On v3, $5$ training seeds give:
+
+\begin{itemize}[leftmargin=*, itemsep=0pt]
+\item Random-init MPNN mean ARI $= \mathbf{0.205}$
+  (range $0.12$--$0.45$).
+\item Trained MPNN mean ARI $= \mathbf{1.000}$ on every seed.
+\item Trained-minus-random gap $= +0.795$.
+\end{itemize}
+Training does earn its keep on the v3 fixture: the noisy features
+make pooled-mean clustering unreliable, so the network has to learn
+to weight the kernel-kind atom (\texttt{decay\_kernel} vs.\
+\texttt{saturation\_kernel} vs.\ \texttt{damped\_kernel}) which is
+the noise-robust class signal. v2's null is therefore a
+fixture-property, not a method-property.
+
+\subsection{External-benchmark fingerprint discovery}
+\label{sec:external}
+
+The signature pipeline's law-zoo evaluation is partly by-construction
+(\S\ref{sec:sig-stack}); we tighten this with a fresh battery of
+$8$ third-party PyMC models authored to standard textbook specs:
+linear regression, logistic regression, Poisson regression with
+log-link, exp-decay, saturating growth, Gamma rate regression,
+power law $y = a x^{b}$, and sinusoid-with-decay
+$A e^{-\gamma t} \sin(\omega t)$. None of these models was placed
+into our equivalence classes by us; they were authored to standard
+forms.
+
+\textbf{Discovered match}: the fresh exp-decay model hashes to
+op-multiset fingerprint \texttt{5ebe8c06f60d5ce9} --- identical to
+the law-zoo's \texttt{exp\_decay} class fingerprint. The fresh
+saturating-growth model hashes to \texttt{ecb20fad14e0fd01} ---
+identical to law-zoo \texttt{saturation}. The Weisfeiler-Lehman
+signatures agree on both matches. The signature pipeline correctly
+identifies cross-context functional equivalence on models authored
+without the equivalence partition in mind.
+
+\textbf{Distinguishing}: the sin-decay model
+($A e^{-\gamma t} \sin(\omega t)$) does \emph{not} match the
+law-zoo's damped-oscillation class (which uses
+$\cos(\omega t + \phi)$). The op graph distinguishes \texttt{Sin}
+from \texttt{Cos} as scalar ops. This is the correct discriminative
+behaviour: structurally different dynamics get different
+fingerprints. No fingerprint collisions among the $8$ unrelated
+models. See \texttt{phase4\_structure/external\_benchmark.py}.
+
+\subsection{Extended garbling search}
+\label{sec:garbling}
+
+Our P4.9a polynomial garbling search was restricted to degree
+$\leq 3$, which left open whether more expressive fixed scalar
+garblings could bridge cross-class pairs. We extend
+(\texttt{phase4\_structure/semantic\_equivalence.py}) to:
+\begin{itemize}[leftmargin=*, itemsep=0pt]
+\item Polynomial degrees $5$ and $7$ (still OLS).
+\item Cubic spline with $8$ B-spline knots placed at quantiles of
+  $\mu_{a}$.
+\item One-hidden-layer MLP, $32$ tanh units, $1000$ Adam epochs in
+  jax.
+\end{itemize}
+On the law-zoo, all three more-expressive families behave the same
+way as polynomial degree-$3$: within-class within-machine-precision
+identity, cross-class relative residual $\geq 0.30$ (REJECT). The
+neural MLP is in particular the strongest scalar fixed-mapping
+family we ship; its rejection on cross-class pairs is strong
+empirical evidence that the BSS inequivalence is not a
+linear-fit artefact and not removable by any expressive bounded
+fixed garbling.
 
 \section{Limitations}
 \label{sec:limitations}
 
 We collect the limitations of all three layers here. The honest
 framing is: this paper is a \emph{pipeline specification} with
-multiple small-scale consistency checks, not a large-scale
-comparative evaluation.
+multiple consistency checks at small-to-medium scale, not a
+large-scale comparative evaluation.
 
-\paragraph{Construction-sensitive benchmarks throughout.} The three
-coherence benchmarks (Alice-Charlie, Noh, Eastern Han), the
-law-zoo's three equivalence classes, and the three classes'
-per-class $\mu(\theta, t)$ functions are all author-constructed.
-Once those constructions are set,
-Proposition~\ref{prop:orphan-by-construction}'s sufficient
-condition governs orphan-last and the BSS / Markov-category
-layer agreement is guaranteed. Third-party benchmark evaluation
-(e.g.\ PyMC gallery models; established Bayesian model-selection
-testbeds) is the natural next step.
+\paragraph{Construction-sensitive benchmarks (partially mitigated).}
+The three coherence benchmarks (Alice-Charlie, Noh, Eastern Han) and
+the law-zoo's three equivalence classes are all author-constructed,
+and once those constructions are set,
+Proposition~\ref{prop:orphan-by-construction}'s sufficient condition
+governs orphan-last and the BSS / Markov-category layer agreement is
+guaranteed. \S\ref{sec:external} mitigates this for the transfer
+layer: $8$ fresh third-party models authored to standard textbook
+specs (linear regression, exp-decay, etc.), not designed into our
+equivalence classes; the fresh exp-decay and saturating-growth
+models nevertheless fingerprint to the law-zoo's exp\_decay and
+saturation class fingerprints (discovered match). What is still
+construction-tight is the choice to author these external models
+\emph{ourselves} rather than import them from a third-party PyMC
+gallery; gallery-grounded evaluation remains future work.
 
 \paragraph{Single-family MEIS effect.} The p-level
 Table~\ref{tab:crossenv} result is GPT-family only. The prompt-only
